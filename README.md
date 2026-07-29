@@ -21,7 +21,7 @@
 
 <br/>
 
-![Header](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6&height=120&section=header&text=Autonomous%20Business%20Platform&fontSize=30&fontColor=ffffff&animation=fadeIn&desc=AI-Driven+Marketing+%26+SaaS+Platform&descSize=15&descAlignY=78)
+![Header](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6&height=120&section=header&text=ABP&fontSize=40&fontColor=ffffff&animation=fadeIn&desc=Autonomous+Business+Platform&descSize=15&descAlignY=78)
 
 </div>
 
