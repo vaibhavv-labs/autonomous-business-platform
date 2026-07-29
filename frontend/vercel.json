@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "autonomous-business-platform",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@abp_api_url"
+  },
+  "rewrites": [
+    {
+      "source": "/api-proxy/:path*",
+      "destination": "https://your-railway-app.railway.app/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ]
+}
