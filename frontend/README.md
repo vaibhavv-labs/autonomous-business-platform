@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+<h1> 🌐 ABP - Next.js Frontend </h1>
 
-First, run the development server:
+**The highly responsive, dark-mode SaaS dashboard interface for the Autonomous Business Platform.**
 
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+
+> **Note:** For the full project documentation and architecture, please see the [Main Project README](../README.md).
+
+</div>
+
+---
+
+## 🎨 Overview
+
+This directory contains the client-facing Next.js App Router application. It serves as the primary dashboard for users to interact with AI agents (Otto), generate visual assets, configure campaigns, and view marketing analytics.
+
+**Key UI Highlights:**
+- Mobile-first, responsive slide-out sidebar navigation.
+- Real-time polling logic for asynchronous AI image/video generation tasks.
+- Premium glassmorphism and curated dark mode aesthetic.
+- Zero server-side state (fully decoupled and edge-deployable via Vercel).
+
+---
+
+## 🚀 Running Locally
+
+### Prerequisites
+- Node.js 18+ installed.
+- Ensure the FastAPI backend is running locally on port 8000.
+
+### 1. Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Start the Development Server
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The frontend will start at [http://localhost:3000](http://localhost:3000).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🌍 Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+When deploying to Vercel (or running locally with a remote backend), you must provide the API endpoint:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
+```
+*(If empty, the app defaults to `http://localhost:8000`)*
