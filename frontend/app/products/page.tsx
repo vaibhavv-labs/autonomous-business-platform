@@ -1,12 +1,23 @@
 "use client";
-import { useState } from "react";
-import { generateImage, pollJob } from "@/lib/api";
+import { useState, useEffect } from "react";
+import {
+  generateImage,
+  pollJob,
+  getDBProducts,
+  createDBProduct,
+  updateDBProduct,
+  deleteDBProduct,
+  DBProduct,
+} from "@/lib/api";
 
 const STYLES = ["Minimalist", "Vintage", "Abstract", "Watercolor", "Bold", "Cyberpunk", "Kawaii", "Photorealistic", "Geometric"];
 const COLORS = ["Vibrant", "Pastel", "Monochrome", "Earth Tones", "Neon", "Ocean Blues", "Sunset Warm"];
 const SIZES = [512, 768, 1024];
 
 export default function ProductsPage() {
+  const [activeTab, setActiveTab] = useState<"studio" | "catalog">("studio");
+
+  // AI Studio Form State
   const [form, setForm] = useState({
     prompt: "",
     style: "Minimalist",
@@ -19,12 +30,38 @@ export default function ProductsPage() {
   const [progress, setProgress] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+
+  // Product Catalog State
+  const [catalog, setCatalog] = useState<DBProduct[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [savingIndex, setSavingIndex] = useState<Record<number, boolean>>({});
+
+  const loadCatalog = async () => {
+    try {
+      setLoadingCatalog(true);
+      const data = await getDBProducts();
+      setCatalog(data.products || []);
+    } catch (err) {
+      console.error("Failed to load catalog:", err);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "catalog") {
+      loadCatalog();
+    }
+  }, [activeTab]);
 
   const handleGenerate = async () => {
     if (!form.prompt.trim()) return;
     setStatus("loading");
     setProgress(0);
     setError("");
+    setSaveSuccessMsg("");
     setImages([]);
     try {
       const payload = {
@@ -46,6 +83,53 @@ export default function ProductsPage() {
     }
   };
 
+  const handleSaveToCatalog = async (url: string, index: number) => {
+    try {
+      setSavingIndex((prev) => ({ ...prev, [index]: true }));
+      const title = form.prompt ? form.prompt.slice(0, 40) + "..." : `Design #${index + 1}`;
+      await createDBProduct({
+        title,
+        prompt: form.prompt,
+        style: form.style,
+        color_palette: form.color_palette,
+        image_url: url,
+        price: 29.99,
+        status: "Active",
+      });
+      setSaveSuccessMsg(`Saved design #${index + 1} to Product Catalog! ✅`);
+      // Refresh count
+      loadCatalog();
+    } catch (err: unknown) {
+      setError("Failed to save product: " + (err as Error).message);
+    } finally {
+      setSavingIndex((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleDeleteCatalogProduct = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}" from your catalog?`)) return;
+    try {
+      await deleteDBProduct(id);
+      setCatalog((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  const handleUpdatePrice = async (id: string, currentPrice: number) => {
+    const newPriceStr = prompt("Enter new price ($):", currentPrice.toString());
+    if (!newPriceStr) return;
+    const newPrice = parseFloat(newPriceStr);
+    if (isNaN(newPrice)) return;
+
+    try {
+      await updateDBProduct(id, { price: newPrice });
+      setCatalog((prev) => prev.map((p) => (p.id === id ? { ...p, price: newPrice } : p)));
+    } catch (err) {
+      console.error("Price update failed:", err);
+    }
+  };
+
   const handleDownload = (url: string, idx: number) => {
     const a = document.createElement("a");
     a.href = url;
@@ -55,211 +139,256 @@ export default function ProductsPage() {
     a.click();
   };
 
+  const filteredCatalog = catalog.filter((p) =>
+    p.title.toLowerCase().includes(search.toLowerCase()) ||
+    p.prompt.toLowerCase().includes(search.toLowerCase()) ||
+    p.style.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl">
-      <div>
-        <h2 className="gradient-text text-2xl font-bold" style={{ letterSpacing: "-0.03em" }}>
-          📦 Product Studio
-        </h2>
-        <p className="text-slate-500 text-sm mt-1">Generate AI product designs & artwork with Flux</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Controls */}
-        <div className="lg:col-span-1">
-          <div className="glass-card p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Design Settings</h3>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Image Prompt *</label>
-              <textarea
-                className="input-field"
-                rows={4}
-                placeholder="e.g., Cute husky dog wearing sunglasses, illustration style, t-shirt design"
-                value={form.prompt}
-                onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-2 block">Style</label>
-              <div className="flex flex-wrap gap-1.5">
-                {STYLES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, style: s }))}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                      form.style === s ? "btn-primary" : "btn-secondary"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-2 block">Color Palette</label>
-              <select
-                className="input-field"
-                value={form.color_palette}
-                onChange={(e) => setForm((f) => ({ ...f, color_palette: e.target.value }))}
-              >
-                {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">Width</label>
-                <select
-                  className="input-field"
-                  value={form.width}
-                  onChange={(e) => setForm((f) => ({ ...f, width: Number(e.target.value) }))}
-                >
-                  {SIZES.map((s) => <option key={s} value={s}>{s}px</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">Height</label>
-                <select
-                  className="input-field"
-                  value={form.height}
-                  onChange={(e) => setForm((f) => ({ ...f, height: Number(e.target.value) }))}
-                >
-                  {SIZES.map((s) => <option key={s} value={s}>{s}px</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">
-                Number of Images: <span className="text-indigo-400 font-bold">{form.num_outputs}</span>
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={4}
-                value={form.num_outputs}
-                onChange={(e) => setForm((f) => ({ ...f, num_outputs: Number(e.target.value) }))}
-                className="w-full accent-indigo-500"
-              />
-              <div className="flex justify-between text-xs text-slate-600 mt-1">
-                <span>1</span><span>2</span><span>3</span><span>4</span>
-              </div>
-            </div>
-
-            <button
-              className="btn-primary w-full justify-center py-2.5"
-              onClick={handleGenerate}
-              disabled={status === "loading" || !form.prompt.trim()}
-            >
-              {status === "loading" ? `⏳ ${progress}%` : "✨ Generate Images"}
-            </button>
-          </div>
+    <div className="space-y-6 animate-fade-in max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="gradient-text text-2xl font-bold" style={{ letterSpacing: "-0.03em" }}>
+            📦 Product Studio & Catalog
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">Generate AI product designs & manage persistent catalog</p>
         </div>
 
-        {/* Output */}
-        <div className="lg:col-span-2">
-          {status === "loading" && (
-            <div className="glass-card p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-300">🎨 AI Rendering...</h3>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${progress}%` }} />
+        {/* Tabs */}
+        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 self-start sm:self-auto">
+          <button
+            onClick={() => setActiveTab("studio")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "studio" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            🎨 AI Product Studio
+          </button>
+          <button
+            onClick={() => setActiveTab("catalog")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "catalog" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            📦 Product Catalog ({catalog.length})
+          </button>
+        </div>
+      </div>
+
+      {/* ── TAB 1: STUDIO ── */}
+      {activeTab === "studio" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <div className="glass-card p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Design Settings</h3>
+
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Image Prompt *</label>
+                <textarea
+                  className="input-field"
+                  rows={4}
+                  placeholder="e.g., Cute husky dog wearing sunglasses, illustration style, t-shirt design"
+                  value={form.prompt}
+                  onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[...Array(form.num_outputs)].map((_, i) => (
-                  <div key={i} className="skeleton rounded-xl" style={{ aspectRatio: `${form.width}/${form.height}`, minHeight: 180 }} />
-                ))}
+
+              <div>
+                <label className="text-xs text-slate-400 mb-2 block">Style</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {STYLES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, style: s }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        form.style === s ? "btn-primary" : "btn-secondary"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
 
-          {status === "error" && (
-            <div className="glass-card p-5 text-sm" style={{ borderColor: "rgba(239,68,68,0.3)", color: "#f87171" }}>
-              ❌ {error}
-            </div>
-          )}
+              <div>
+                <label className="text-xs text-slate-400 mb-2 block">Color Palette</label>
+                <select
+                  className="input-field"
+                  value={form.color_palette}
+                  onChange={(e) => setForm((f) => ({ ...f, color_palette: e.target.value }))}
+                >
+                  {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
 
-          {status === "idle" && (
-            <div className="glass-card p-12 text-center h-full flex flex-col items-center justify-center">
-              <div className="text-6xl mb-4">🎨</div>
-              <div className="text-slate-400 font-medium">Your designs will appear here</div>
-              <div className="text-slate-600 text-sm mt-1">Powered by Flux AI — 1024×1024 by default</div>
-            </div>
-          )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Width</label>
+                  <select
+                    className="input-field"
+                    value={form.width}
+                    onChange={(e) => setForm((f) => ({ ...f, width: Number(e.target.value) }))}
+                  >
+                    {SIZES.map((s) => <option key={s} value={s}>{s}px</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Height</label>
+                  <select
+                    className="input-field"
+                    value={form.height}
+                    onChange={(e) => setForm((f) => ({ ...f, height: Number(e.target.value) }))}
+                  >
+                    {SIZES.map((s) => <option key={s} value={s}>{s}px</option>)}
+                  </select>
+                </div>
+              </div>
 
-          {status === "done" && images.length > 0 && (
-            <div className="space-y-4">
-              <div
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
-                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#34d399" }}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">
+                  Number of Images: <span className="text-indigo-400 font-bold">{form.num_outputs}</span>
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={4}
+                  value={form.num_outputs}
+                  onChange={(e) => setForm((f) => ({ ...f, num_outputs: Number(e.target.value) }))}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <button
+                className="btn-primary w-full justify-center py-2.5"
+                onClick={handleGenerate}
+                disabled={status === "loading" || !form.prompt.trim()}
               >
-                ✅ {images.length} image{images.length > 1 ? "s" : ""} generated! (Loading from Flux AI...)
+                {status === "loading" ? `⏳ Rendering ${progress}%` : "✨ Generate Designs"}
+              </button>
+
+              {saveSuccessMsg && <div className="text-xs text-emerald-400 bg-emerald-500/10 p-3 rounded border border-emerald-500/20">{saveSuccessMsg}</div>}
+              {error && <div className="text-xs text-rose-400 bg-rose-500/10 p-3 rounded border border-rose-500/20">{error}</div>}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {status === "loading" && (
+              <div className="glass-card p-6 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-300">🎨 Flux AI Generating...</h3>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[...Array(form.num_outputs)].map((_, i) => (
+                    <div key={i} className="skeleton rounded-xl" style={{ aspectRatio: `${form.width}/${form.height}`, minHeight: 180 }} />
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {images.map((url, i) => (
-                  <div key={i} className="glass-card overflow-hidden group">
-                    <div className="relative" style={{ minHeight: 200, background: "rgba(0,0,0,0.3)" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={url}
-                        alt={`Generated design ${i + 1}`}
-                        className="w-full object-cover"
-                        style={{ maxHeight: 360, display: "block" }}
-                        onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = "1"; }}
-                        onError={(e) => {
-                          const img = e.target as HTMLImageElement;
-                          img.style.display = "none";
-                          const parent = img.parentElement!;
-                          if (!parent.querySelector(".img-fallback")) {
-                            const div = document.createElement("div");
-                            div.className = "img-fallback";
-                            div.style.cssText = "padding:20px;text-align:center;color:#94a3b8;font-size:13px;";
-                            div.innerHTML = `<div style="font-size:32px;margin-bottom:8px">🎨</div><div>Image generated! Click <strong>👁 View</strong> to open it</div><div style="margin-top:8px;word-break:break-all;font-size:10px;color:#64748b">${url.slice(0, 80)}...</div>`;
-                            parent.appendChild(div);
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="p-3 flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Design #{i + 1}</span>
-                      <div className="flex gap-2">
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-2 py-1">
-                          👁 View Full
-                        </a>
-                        <button
-                          className="btn-primary text-xs px-2 py-1"
-                          onClick={() => handleDownload(url, i)}
-                        >
-                          ⬇ Save
-                        </button>
+            )}
+
+            {status === "idle" && (
+              <div className="glass-card p-12 text-center h-full flex flex-col items-center justify-center">
+                <div className="text-6xl mb-4">🎨</div>
+                <div className="text-slate-400 font-medium">Your designs will appear here</div>
+                <div className="text-slate-600 text-sm mt-1">Powered by Flux AI — 100% Free & Unlimited</div>
+              </div>
+            )}
+
+            {status === "done" && images.length > 0 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {images.map((url, i) => (
+                    <div key={i} className="glass-card overflow-hidden group space-y-2 p-3">
+                      <div className="relative rounded-lg overflow-hidden bg-black/40" style={{ minHeight: 200 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Design ${i + 1}`} className="w-full object-cover rounded-lg" style={{ maxHeight: 300 }} />
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs font-semibold text-slate-300">Design #{i + 1}</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSaveToCatalog(url, i)}
+                            disabled={savingIndex[i]}
+                            className="btn-primary text-xs px-2.5 py-1"
+                          >
+                            {savingIndex[i] ? "Saving..." : "📦 Save to Catalog"}
+                          </button>
+                          <button onClick={() => handleDownload(url, i)} className="btn-secondary text-xs px-2 py-1">
+                            ⬇ Download
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    {/* Always show direct URL */}
-                    <div className="px-3 pb-3">
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-indigo-400 hover:text-indigo-300 break-all underline"
-                      >
-                        🔗 Open image in new tab →
-                      </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 2: PRODUCT CATALOG ── */}
+      {activeTab === "catalog" && (
+        <div className="space-y-4">
+          <div className="glass-card p-4 flex items-center justify-between">
+            <input
+              type="text"
+              className="input-field max-w-xs"
+              placeholder="🔍 Search product catalog..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="text-xs text-slate-400 font-medium">
+              Showing {filteredCatalog.length} of {catalog.length} products
+            </div>
+          </div>
+
+          {loadingCatalog ? (
+            <div className="glass-card p-8 text-center text-slate-400">Loading catalog from database...</div>
+          ) : filteredCatalog.length === 0 ? (
+            <div className="glass-card p-12 text-center text-slate-500">
+              <span className="text-4xl block mb-2">📦</span>
+              <div>No Products in Catalog Yet</div>
+              <p className="text-xs text-slate-500 mt-1">Generate AI designs in Product Studio and click "Save to Catalog".</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {filteredCatalog.map((item) => (
+                <div key={item.id} className="glass-card p-4 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden bg-black/40 aspect-square">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="font-bold text-slate-100 text-sm line-clamp-1">{item.title}</div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-indigo-400 font-medium">{item.style || "AI Design"}</span>
+                      <span className="text-emerald-400 font-mono font-bold">${item.price}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {status === "done" && images.length === 0 && (
-            <div className="glass-card p-6 text-center text-yellow-400 text-sm">
-              ⚠️ Job completed but no images returned. Try again with a different prompt.
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                    <button
+                      onClick={() => handleUpdatePrice(item.id, item.price)}
+                      className="text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      ✏️ Edit Price
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCatalogProduct(item.id, item.title)}
+                      className="text-rose-400 hover:text-rose-300 transition-colors"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

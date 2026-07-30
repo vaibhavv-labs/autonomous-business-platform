@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from groq import AsyncGroq
+import database as db
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env", override=True)
 
@@ -166,6 +167,57 @@ class ContactRequest(BaseModel):
     target_market: str = ""
     contact_types: List[str] = ["influencer", "blogger"]
     num_contacts: int = 20
+
+# ─── CRUD Pydantic Models ───────────────────────────────────────────────────
+
+class CustomerCreate(BaseModel):
+    name: str
+    email: str
+    product: Optional[str] = ""
+    status: Optional[str] = "Active"
+    spent: Optional[float] = 0.0
+    joined: Optional[str] = ""
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    product: Optional[str] = None
+    status: Optional[str] = None
+    spent: Optional[float] = None
+
+class ContactCreate(BaseModel):
+    name: str
+    role: Optional[str] = ""
+    company: Optional[str] = ""
+    channel: Optional[str] = "Email"
+    score: Optional[int] = 5
+    strategy: Optional[str] = ""
+    email: Optional[str] = ""
+    status: Optional[str] = "New"
+
+class ContactUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    company: Optional[str] = None
+    channel: Optional[str] = None
+    score: Optional[int] = None
+    strategy: Optional[str] = None
+    email: Optional[str] = None
+    status: Optional[str] = None
+
+class ProductCreate(BaseModel):
+    title: str
+    prompt: Optional[str] = ""
+    style: Optional[str] = ""
+    color_palette: Optional[str] = ""
+    image_url: str
+    price: Optional[float] = 29.99
+    status: Optional[str] = "Active"
+
+class ProductUpdate(BaseModel):
+    title: Optional[str] = None
+    price: Optional[float] = None
+    status: Optional[str] = None
 
 # ─── Health ──────────────────────────────────────────────────────────────────
 
@@ -518,6 +570,85 @@ async def find_contacts(request: ContactRequest, background_tasks: BackgroundTas
     job = _new_job("contact_finder", f"Find contacts: {request.product_description[:50]}", request.dict())
     background_tasks.add_task(_run_contact_finder, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
+
+# ─── Database CRUD Endpoints ───────────────────────────────────────────────
+
+# Customers
+@app.get("/api/customers")
+async def list_customers():
+    return {"customers": db.get_all_customers()}
+
+@app.post("/api/customers")
+async def create_customer(customer: CustomerCreate):
+    res = db.create_customer(customer.dict())
+    return {"customer": res, "message": "Customer created successfully"}
+
+@app.put("/api/customers/{customer_id}")
+async def update_customer(customer_id: str, customer: CustomerUpdate):
+    res = db.update_customer(customer_id, customer.dict(exclude_unset=True))
+    if not res:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return {"customer": res, "message": "Customer updated"}
+
+@app.delete("/api/customers/{customer_id}")
+async def delete_customer(customer_id: str):
+    success = db.delete_customer(customer_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return {"message": "Customer deleted"}
+
+# Contacts DB
+@app.get("/api/contacts/db")
+async def list_db_contacts():
+    return {"contacts": db.get_all_contacts()}
+
+@app.post("/api/contacts/db")
+async def create_db_contact(contact: ContactCreate):
+    res = db.create_contact(contact.dict())
+    return {"contact": res, "message": "Contact saved"}
+
+@app.post("/api/contacts/db/bulk")
+async def bulk_create_db_contacts(contacts: List[ContactCreate]):
+    saved = [db.create_contact(c.dict()) for c in contacts]
+    return {"contacts": saved, "count": len(saved), "message": "Contacts saved"}
+
+@app.put("/api/contacts/db/{contact_id}")
+async def update_db_contact(contact_id: str, contact: ContactUpdate):
+    res = db.update_contact(contact_id, contact.dict(exclude_unset=True))
+    if not res:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"contact": res, "message": "Contact updated"}
+
+@app.delete("/api/contacts/db/{contact_id}")
+async def delete_db_contact(contact_id: str):
+    success = db.delete_contact(contact_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"message": "Contact deleted"}
+
+# Products DB
+@app.get("/api/products/db")
+async def list_db_products():
+    return {"products": db.get_all_products()}
+
+@app.post("/api/products/db")
+async def create_db_product(product: ProductCreate):
+    res = db.create_product(product.dict())
+    return {"product": res, "message": "Product saved"}
+
+@app.put("/api/products/db/{product_id}")
+async def update_db_product(product_id: str, product: ProductUpdate):
+    res = db.update_product(product_id, product.dict(exclude_unset=True))
+    if not res:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"product": res, "message": "Product updated"}
+
+@app.delete("/api/products/db/{product_id}")
+async def delete_db_product(product_id: str):
+    success = db.delete_product(product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product deleted"}
 
 # ─── Analytics ────────────────────────────────────────────────────────────────
 

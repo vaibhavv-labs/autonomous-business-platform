@@ -125,3 +125,69 @@ export async function pollJob(
     iv = setInterval(check, intervalMs);
   });
 }
+
+// ─── CRUD Interfaces ──────────────────────────────────────────
+export interface DBCustomer {
+  id: string;
+  name: string;
+  email: string;
+  product: string;
+  status: string;
+  spent: number;
+  joined: string;
+  created_at: string;
+}
+
+export interface DBContact {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  channel: string;
+  score: number;
+  strategy: string;
+  email: string;
+  status: string;
+  created_at: string;
+}
+
+export interface DBProduct {
+  id: string;
+  title: string;
+  prompt: string;
+  style: string;
+  color_palette: string;
+  image_url: string;
+  price: number;
+  status: string;
+  created_at: string;
+}
+
+// ─── Customers API ────────────────────────────────────────────
+export const getCustomers = (): Promise<{ customers: DBCustomer[] }> => fetchAPI("/api/customers");
+export const createCustomer = (body: Partial<DBCustomer>): Promise<{ customer: DBCustomer; message: string }> =>
+  fetchAPI("/api/customers", { method: "POST", body: JSON.stringify(body) });
+export const updateCustomer = (id: string, body: Partial<DBCustomer>): Promise<{ customer: DBCustomer; message: string }> =>
+  fetchAPI(`/api/customers/${id}`, { method: "PUT", body: JSON.stringify(body) });
+export const deleteCustomer = (id: string): Promise<{ message: string }> =>
+  fetchAPI(`/api/customers/${id}`, { method: "DELETE" });
+
+// ─── Contacts DB API ──────────────────────────────────────────
+export const getDBContacts = (): Promise<{ contacts: DBContact[] }> => fetchAPI("/api/contacts/db");
+export const createDBContact = (body: Partial<DBContact>): Promise<{ contact: DBContact; message: string }> =>
+  fetchAPI("/api/contacts/db", { method: "POST", body: JSON.stringify(body) });
+export const bulkCreateDBContacts = (contacts: Partial<DBContact>[]): Promise<{ contacts: DBContact[]; count: number; message: string }> =>
+  fetchAPI("/api/contacts/db/bulk", { method: "POST", body: JSON.stringify(contacts) });
+export const updateDBContact = (id: string, body: Partial<DBContact>): Promise<{ contact: DBContact; message: string }> =>
+  fetchAPI(`/api/contacts/db/${id}`, { method: "PUT", body: JSON.stringify(body) });
+export const deleteDBContact = (id: string): Promise<{ message: string }> =>
+  fetchAPI(`/api/contacts/db/${id}`, { method: "DELETE" });
+
+// ─── Products DB API ──────────────────────────────────────────
+export const getDBProducts = (): Promise<{ products: DBProduct[] }> => fetchAPI("/api/products/db");
+export const createDBProduct = (body: Partial<DBProduct>): Promise<{ product: DBProduct; message: string }> =>
+  fetchAPI("/api/products/db", { method: "POST", body: JSON.stringify(body) });
+export const updateDBProduct = (id: string, body: Partial<DBProduct>): Promise<{ product: DBProduct; message: string }> =>
+  fetchAPI(`/api/products/db/${id}`, { method: "PUT", body: JSON.stringify(body) });
+export const deleteDBProduct = (id: string): Promise<{ message: string }> =>
+  fetchAPI(`/api/products/db/${id}`, { method: "DELETE" });
