@@ -57,29 +57,11 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const user      = session?.user || { name: "User", email: "user@abp.ai" };
   const initials  = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "U";
 
-  const handleSignOut = async () => {
-    setMenuOpen(false);
-    try {
-      // Step 1: Get CSRF token from NextAuth
-      const csrfRes = await fetch("/api/auth/csrf");
-      const { csrfToken } = await csrfRes.json();
-
-      // Step 2: POST to NextAuth signout endpoint to destroy the session cookie
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ csrfToken }),
-      });
-    } catch (err) {
-      console.error("SignOut fetch error:", err);
-    }
-
-    // Step 3: Clear any client-side storage
+  const handleSignOut = () => {
+    // Clear client storage first, then let the server kill the session cookie
     localStorage.clear();
     sessionStorage.clear();
-
-    // Step 4: Hard navigate to login — no React router, forces full page reload
-    window.location.href = "/login";
+    window.location.href = "/api/logout";
   };
 
   return (
