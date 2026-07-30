@@ -16,11 +16,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import time
+from collections import defaultdict
 import httpx
 import uvicorn
-from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from groq import AsyncGroq
 import database as db
@@ -40,6 +43,55 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Task 14: Rate Limiting Middleware (Sliding Window: 60 req/min) ──────────
+_rate_limit_store = defaultdict(list)
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    path = request.url.path
+    if path in ["/", "/health", "/docs", "/openapi.json"] or path.startswith("/ws"):
+        return await call_next(request)
+
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    now = time.time()
+    window = 60  # seconds
+    limit = 60   # max requests per minute
+
+    requests_history = [t for t in _rate_limit_store[client_ip] if now - t < window]
+    _rate_limit_store[client_ip] = requests_history
+
+    if len(requests_history) >= limit:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": "Rate limit exceeded. Please wait a minute before making more requests.",
+                "code": "TOO_MANY_REQUESTS",
+                "retry_after_seconds": 60,
+            },
+        )
+
+    _rate_limit_store[client_ip].append(now)
+    return await call_next(request)
+
+# ─── Task 16: Custom Global Exception Handlers ───────────────────────────────
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": str(exc.detail), "code": f"HTTP_{exc.status_code}"},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "An unexpected error occurred. Please try again later.",
+            "code": "INTERNAL_SERVER_ERROR",
+        },
+    )
 
 # ─── Job Store ───────────────────────────────────────────────────────────────
 _jobs: Dict[str, Dict] = {}
@@ -123,96 +175,96 @@ def _image_url(prompt: str, width: int = 1024, height: int = 1024, seed: int = 4
     )
 
 
-# ─── Pydantic Models ─────────────────────────────────────────────────────────
+# ─── Pydantic Models with Strict Validation (Task 15) ───────────────────────
 
 class CampaignRequest(BaseModel):
-    product_description: str
-    target_audience: str = ""
-    budget: float = 5000.0
-    platforms: List[str] = ["Instagram", "Facebook", "TikTok"]
-    campaign_goal: str = "Brand Awareness"
-    campaign_tone: str = "Professional"
-    competitor_info: str = ""
+    product_description: str = Field(..., min_length=2, max_length=2000, description="Product description")
+    target_audience: str = Field(default="", max_length=1000)
+    budget: float = Field(default=5000.0, ge=0, le=1000000)
+    platforms: List[str] = Field(default=["Instagram", "Facebook", "TikTok"])
+    campaign_goal: str = Field(default="Brand Awareness", max_length=255)
+    campaign_tone: str = Field(default="Professional", max_length=255)
+    competitor_info: str = Field(default="", max_length=2000)
 
 class ImageRequest(BaseModel):
-    prompt: str
-    model: str = "flux"
-    width: int = 1024
-    height: int = 1024
-    num_outputs: int = 1
-    style: str = ""
-    color_palette: str = ""
+    prompt: str = Field(..., min_length=2, max_length=2000)
+    model: str = Field(default="flux", max_length=100)
+    width: int = Field(default=1024, ge=256, le=2048)
+    height: int = Field(default=1024, ge=256, le=2048)
+    num_outputs: int = Field(default=1, ge=1, le=4)
+    style: str = Field(default="", max_length=100)
+    color_palette: str = Field(default="", max_length=100)
 
 class VideoRequest(BaseModel):
-    prompt: str
-    model: str = "minimax/video-01"
-    duration: int = 5
-    aspect_ratio: str = "16:9"
+    prompt: str = Field(..., min_length=2, max_length=2000)
+    model: str = Field(default="minimax/video-01", max_length=100)
+    duration: int = Field(default=5, ge=1, le=30)
+    aspect_ratio: str = Field(default="16:9", max_length=20)
 
 class ContentRequest(BaseModel):
-    topic: str
-    content_type: str = "blog_post"
-    tone: str = "Professional"
-    target_audience: str = ""
-    keywords: List[str] = []
-    word_count: int = 500
+    topic: str = Field(..., min_length=2, max_length=1000)
+    content_type: str = Field(default="blog_post", max_length=100)
+    tone: str = Field(default="Professional", max_length=100)
+    target_audience: str = Field(default="", max_length=1000)
+    keywords: List[str] = Field(default=[])
+    word_count: int = Field(default=500, ge=50, le=5000)
 
 class ChatMessage(BaseModel):
-    message: str
-    conversation_id: str = ""
-    context: Dict[str, Any] = {}
+    message: str = Field(..., min_length=1, max_length=4000)
+    conversation_id: str = Field(default="", max_length=100)
+    context: Dict[str, Any] = Field(default={})
 
 class ContactRequest(BaseModel):
-    product_description: str
-    target_market: str = ""
-    contact_types: List[str] = ["influencer", "blogger"]
-    num_contacts: int = 20
+    product_description: str = Field(..., min_length=2, max_length=2000)
+    target_market: str = Field(default="", max_length=1000)
+    contact_types: List[str] = Field(default=["influencer", "blogger"])
+    num_contacts: int = Field(default=20, ge=1, le=50)
 
 # ─── CRUD Pydantic Models ───────────────────────────────────────────────────
 
 class CustomerCreate(BaseModel):
-    name: str
-    email: str
-    product: Optional[str] = ""
-    status: Optional[str] = "Active"
-    spent: Optional[float] = 0.0
-    joined: Optional[str] = ""
+    name: str = Field(..., min_length=1, max_length=255)
+    email: str = Field(..., min_length=3, max_length=255)
+    product: Optional[str] = Field(default="", max_length=255)
+    status: Optional[str] = Field(default="Active", max_length=50)
+    spent: Optional[float] = Field(default=0.0, ge=0)
+    joined: Optional[str] = Field(default="", max_length=50)
 
 class CustomerUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    product: Optional[str] = None
-    status: Optional[str] = None
-    spent: Optional[float] = None
+    name: Optional[str] = Field(default=None, max_length=255)
+    email: Optional[str] = Field(default=None, max_length=255)
+    product: Optional[str] = Field(default=None, max_length=255)
+    status: Optional[str] = Field(default=None, max_length=50)
+    spent: Optional[float] = Field(default=None, ge=0)
 
 class ContactCreate(BaseModel):
-    name: str
-    role: Optional[str] = ""
-    company: Optional[str] = ""
-    channel: Optional[str] = "Email"
-    score: Optional[int] = 5
-    strategy: Optional[str] = ""
-    email: Optional[str] = ""
-    status: Optional[str] = "New"
+    name: str = Field(..., min_length=1, max_length=255)
+    role: Optional[str] = Field(default="", max_length=255)
+    company: Optional[str] = Field(default="", max_length=255)
+    channel: Optional[str] = Field(default="Email", max_length=100)
+    score: Optional[int] = Field(default=5, ge=1, le=10)
+    strategy: Optional[str] = Field(default="", max_length=2000)
+    email: Optional[str] = Field(default="", max_length=255)
+    status: Optional[str] = Field(default="New", max_length=50)
 
 class ContactUpdate(BaseModel):
-    name: Optional[str] = None
-    role: Optional[str] = None
-    company: Optional[str] = None
-    channel: Optional[str] = None
-    score: Optional[int] = None
-    strategy: Optional[str] = None
-    email: Optional[str] = None
-    status: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=255)
+    role: Optional[str] = Field(default=None, max_length=255)
+    company: Optional[str] = Field(default=None, max_length=255)
+    channel: Optional[str] = Field(default=None, max_length=100)
+    score: Optional[int] = Field(default=None, ge=1, le=10)
+    strategy: Optional[str] = Field(default=None, max_length=2000)
+    email: Optional[str] = Field(default=None, max_length=255)
+    status: Optional[str] = Field(default=None, max_length=50)
 
 class ProductCreate(BaseModel):
-    title: str
-    prompt: Optional[str] = ""
-    style: Optional[str] = ""
-    color_palette: Optional[str] = ""
-    image_url: str
-    price: Optional[float] = 29.99
-    status: Optional[str] = "Active"
+    title: str = Field(..., min_length=1, max_length=255)
+    prompt: Optional[str] = Field(default="", max_length=2000)
+    style: Optional[str] = Field(default="", max_length=100)
+    color_palette: Optional[str] = Field(default="", max_length=100)
+    image_url: str = Field(..., min_length=5)
+    price: Optional[float] = Field(default=29.99, ge=0)
+    status: Optional[str] = Field(default="Active", max_length=50)
 
 class ProductUpdate(BaseModel):
     title: Optional[str] = None
