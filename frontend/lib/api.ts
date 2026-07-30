@@ -1,15 +1,43 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 async function fetchAPI(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
-    ...options,
-  });
-  if (!res.ok) {
+  const customBase = process.env.NEXT_PUBLIC_API_URL;
+  // If customBase is set (and not localhost on production), use it; otherwise use relative path /api/...
+  const isVercel = typeof window !== "undefined" && window.location.hostname.includes("vercel.app");
+  const baseUrl = (customBase && (!isVercel || !customBase.includes("localhost"))) ? customBase : "";
+  const url = `${baseUrl}${path}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...options.headers },
+      ...options,
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    // If custom base returned error, attempt fallback to relative route
+    if (baseUrl && url !== path) {
+      const fb = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...options.headers },
+        ...options,
+      });
+      if (fb.ok) return await fb.json();
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || `API error ${res.status}`);
+  } catch (err: any) {
+    // If network error (e.g. localhost unreachable on Vercel), fallback to relative route
+    if (baseUrl && url !== path) {
+      try {
+        const fb = await fetch(path, {
+          headers: { "Content-Type": "application/json", ...options.headers },
+          ...options,
+        });
+        if (fb.ok) return await fb.json();
+      } catch {
+        /* ignore */
+      }
+    }
+    throw err;
   }
-  return res.json();
 }
 
 // ─── Health ──────────────────────────────────────────────────

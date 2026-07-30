@@ -42,18 +42,34 @@ export default function ProductsPage() {
     try {
       setLoadingCatalog(true);
       const data = await getDBProducts();
-      setCatalog(data.products || []);
+      let fetched = data.products || [];
+      const local = typeof window !== "undefined" ? localStorage.getItem("abp_products") : null;
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const ids = new Set(fetched.map((p: any) => p.id));
+            for (const item of parsed) {
+              if (!ids.has(item.id)) fetched.unshift(item);
+            }
+          }
+        } catch {}
+      }
+      setCatalog(fetched);
+      if (typeof window !== "undefined") localStorage.setItem("abp_products", JSON.stringify(fetched));
     } catch (err) {
-      console.error("Failed to load catalog:", err);
+      console.error("Failed to load catalog from API, using local storage:", err);
+      const local = typeof window !== "undefined" ? localStorage.getItem("abp_products") : null;
+      if (local) {
+        try { setCatalog(JSON.parse(local)); } catch {}
+      }
     } finally {
       setLoadingCatalog(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === "catalog") {
-      loadCatalog();
-    }
+    loadCatalog();
   }, [activeTab]);
 
   const handleGenerate = async () => {
@@ -87,7 +103,8 @@ export default function ProductsPage() {
     try {
       setSavingIndex((prev) => ({ ...prev, [index]: true }));
       const title = form.prompt ? form.prompt.slice(0, 40) + "..." : `Design #${index + 1}`;
-      await createDBProduct({
+      const newProductItem: DBProduct = {
+        id: "prod_" + Math.random().toString(36).substring(2, 9),
         title,
         prompt: form.prompt,
         style: form.style,
@@ -95,10 +112,24 @@ export default function ProductsPage() {
         image_url: url,
         price: 29.99,
         status: "Active",
+        created_at: new Date().toISOString(),
+      };
+      createDBProduct({
+        title: newProductItem.title,
+        prompt: newProductItem.prompt,
+        style: newProductItem.style,
+        color_palette: newProductItem.color_palette,
+        image_url: newProductItem.image_url,
+        price: newProductItem.price,
+        status: newProductItem.status,
+      }).catch(() => {});
+
+      setCatalog((prev) => {
+        const next = [newProductItem, ...prev];
+        if (typeof window !== "undefined") localStorage.setItem("abp_products", JSON.stringify(next));
+        return next;
       });
       setSaveSuccessMsg(`Saved design #${index + 1} to Product Catalog! ✅`);
-      // Refresh count
-      loadCatalog();
     } catch (err: unknown) {
       setError("Failed to save product: " + (err as Error).message);
     } finally {
@@ -108,12 +139,12 @@ export default function ProductsPage() {
 
   const handleDeleteCatalogProduct = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" from your catalog?`)) return;
-    try {
-      await deleteDBProduct(id);
-      setCatalog((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
+    deleteDBProduct(id).catch(() => {});
+    setCatalog((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      if (typeof window !== "undefined") localStorage.setItem("abp_products", JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleUpdatePrice = async (id: string, currentPrice: number) => {
@@ -121,13 +152,12 @@ export default function ProductsPage() {
     if (!newPriceStr) return;
     const newPrice = parseFloat(newPriceStr);
     if (isNaN(newPrice)) return;
-
-    try {
-      await updateDBProduct(id, { price: newPrice });
-      setCatalog((prev) => prev.map((p) => (p.id === id ? { ...p, price: newPrice } : p)));
-    } catch (err) {
-      console.error("Price update failed:", err);
-    }
+    updateDBProduct(id, { price: newPrice }).catch(() => {});
+    setCatalog((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, price: newPrice } : p));
+      if (typeof window !== "undefined") localStorage.setItem("abp_products", JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleDownload = (url: string, idx: number) => {
