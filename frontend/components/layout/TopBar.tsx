@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 
@@ -24,11 +24,9 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuClick }: TopBarProps) {
-  const pathname            = usePathname();
-  const { data: session }   = useSession();
-  const [time, setTime]     = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef             = useRef<HTMLDivElement>(null);
+  const pathname          = usePathname();
+  const { data: session } = useSession();
+  const [time, setTime]   = useState("");
 
   useEffect(() => {
     const update = () =>
@@ -38,34 +36,23 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
     return () => clearInterval(iv);
   }, []);
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node))
-        setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const matchedKey =
     Object.keys(pageTitles)
       .filter((k) => pathname === k || (k !== "/" && pathname.startsWith(k)))
       .sort((a, b) => b.length - a.length)[0] || "/";
   const { title, subtitle } = pageTitles[matchedKey] || pageTitles["/"];
 
-  const user     = session?.user || { name: "User", email: "user@abp.ai" };
+  const user     = session?.user || { name: "User", email: "user@abp.ai", image: null };
   const initials = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "U";
 
   return (
     <header
       className="flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0"
       style={{
-        background:     "rgba(10, 14, 23, 0.8)",
-        borderBottom:   "1px solid rgba(99,102,241,0.1)",
-        backdropFilter: "blur(12px)",
-        minHeight:      "60px",
-        position:       "relative",
+        background:   "rgba(10, 14, 23, 0.95)",
+        borderBottom: "1px solid rgba(99,102,241,0.1)",
+        minHeight:    "60px",
+        /* NO backdropFilter — it breaks position:fixed stacking */
       }}
     >
       {/* Left — Hamburger + Page Title */}
@@ -79,9 +66,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <span className="w-5 h-0.5 bg-slate-400 rounded-full" />
           <span className="w-4 h-0.5 bg-slate-400 rounded-full" />
         </button>
-
         <div>
-          <h1 className="text-sm sm:text-base font-bold text-slate-100 leading-tight" style={{ fontWeight: 700 }}>
+          <h1 className="text-sm sm:text-base font-bold text-slate-100 leading-tight">
             {title}
           </h1>
           <p className="text-xs text-slate-500 hidden sm:block">{subtitle}</p>
@@ -90,7 +76,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
       {/* Right — Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* AI Live pill */}
+
+        {/* AI Live */}
         <div
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
           style={{
@@ -101,109 +88,87 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           <span className="hidden md:inline">AI Live</span>
-          <span className="md:hidden">Live</span>
         </div>
 
-        {/* Time */}
+        {/* Clock */}
         <div className="hidden md:block text-xs text-slate-500 font-mono">{time}</div>
 
-        {/* Otto Quick Launch */}
+        {/* Otto AI */}
         <button
           className="btn-primary text-xs px-2.5 sm:px-3 py-1.5 whitespace-nowrap"
           onClick={() => (window.location.href = "/chat")}
           style={{ fontSize: "0.78rem" }}
         >
           🤖 <span className="hidden sm:inline">Otto AI</span>
-          <span className="sm:hidden">AI</span>
         </button>
 
-        {/* Avatar + Dropdown */}
-        <div ref={menuRef} style={{ position: "relative" }}>
-          {/* Avatar button */}
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            style={{
-              width:          "36px",
-              height:         "36px",
-              borderRadius:   "50%",
-              overflow:       "hidden",
-              border:         "2px solid rgba(99,102,241,0.5)",
-              cursor:         "pointer",
-              flexShrink:     0,
-              background:     "linear-gradient(135deg,#6366f1,#a78bfa)",
-              display:        "flex",
-              alignItems:     "center",
-              justifyContent: "center",
-              fontSize:       "0.75rem",
-              fontWeight:     700,
-              color:          "white",
-              padding:        0,
-            }}
-            title={user.name ?? "User menu"}
-          >
-            {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name ?? "User"}
-                width={36}
-                height={36}
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
-              />
-            ) : (
-              initials
-            )}
-          </button>
-
-          {/* Dropdown Menu */}
-          {menuOpen && (
-            <div
-              style={{
-                position:       "fixed",
-                top:            "62px",
-                right:          "1.25rem",
-                minWidth:       "230px",
-                background:     "rgba(10,14,23,0.98)",
-                border:         "1px solid rgba(99,102,241,0.3)",
-                borderRadius:   "0.75rem",
-                backdropFilter: "blur(24px)",
-                boxShadow:      "0 20px 50px rgba(0,0,0,0.8)",
-                zIndex:         99999,
-                overflow:       "hidden",
-              }}
-            >
-              {/* User info */}
-              <div style={{ padding: "0.875rem 1rem", borderBottom: "1px solid rgba(99,102,241,0.1)" }}>
-                <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#f1f5f9" }}>{user.name}</div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{user.email}</div>
-              </div>
-
-              {/* ── Sign Out — plain <a> tag, href always navigates ── */}
-              <a
-                href="/api/logout"
-                onClick={() => { localStorage.clear(); sessionStorage.clear(); }}
-                style={{
-                  display:        "flex",
-                  alignItems:     "center",
-                  gap:            "0.6rem",
-                  width:          "100%",
-                  padding:        "0.8rem 1rem",
-                  color:          "#f87171",
-                  fontSize:       "0.875rem",
-                  fontWeight:     600,
-                  textDecoration: "none",
-                  background:     "transparent",
-                  transition:     "background 0.15s",
-                  cursor:         "pointer",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <span style={{ fontSize: "1rem" }}>🚪</span>
-                Sign out
-              </a>
-            </div>
+        {/* Avatar (display only, no dropdown) */}
+        <div
+          style={{
+            width:          "34px",
+            height:         "34px",
+            borderRadius:   "50%",
+            overflow:       "hidden",
+            border:         "2px solid rgba(99,102,241,0.5)",
+            flexShrink:     0,
+            background:     "linear-gradient(135deg,#6366f1,#a78bfa)",
+            display:        "flex",
+            alignItems:     "center",
+            justifyContent: "center",
+            fontSize:       "0.72rem",
+            fontWeight:     700,
+            color:          "white",
+          }}
+          title={user.name ?? "User"}
+        >
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={user.name ?? "User"}
+              width={34}
+              height={34}
+              style={{ objectFit: "cover", width: "100%", height: "100%" }}
+            />
+          ) : (
+            initials
           )}
         </div>
+
+        {/* ── SIGN OUT — plain visible link, no dropdown, no z-index ── */}
+        <a
+          href="/api/logout"
+          onClick={() => { localStorage.clear(); sessionStorage.clear(); }}
+          title="Sign out"
+          style={{
+            display:        "flex",
+            alignItems:     "center",
+            gap:            "0.35rem",
+            padding:        "0.4rem 0.75rem",
+            borderRadius:   "0.5rem",
+            border:         "1px solid rgba(239,68,68,0.35)",
+            background:     "rgba(239,68,68,0.08)",
+            color:          "#f87171",
+            fontSize:       "0.8rem",
+            fontWeight:     600,
+            textDecoration: "none",
+            cursor:         "pointer",
+            whiteSpace:     "nowrap",
+            transition:     "background 0.15s, border-color 0.15s",
+            flexShrink:     0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background    = "rgba(239,68,68,0.18)";
+            e.currentTarget.style.borderColor   = "rgba(239,68,68,0.6)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background    = "rgba(239,68,68,0.08)";
+            e.currentTarget.style.borderColor   = "rgba(239,68,68,0.35)";
+          }}
+        >
+          <span>🚪</span>
+          <span className="hidden sm:inline">Sign Out</span>
+        </a>
+
       </div>
     </header>
   );
