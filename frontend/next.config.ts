@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "pbxt.replicate.delivery" },
       { protocol: "https", hostname: "image.pollinations.ai" },
       { protocol: "https", hostname: "**.pollinations.ai" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
     ],
     // Allow all external images via unoptimized (fallback for plain <img> tags)
     unoptimized: false,

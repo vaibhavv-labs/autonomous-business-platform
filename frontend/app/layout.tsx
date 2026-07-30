@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import RootLayoutClient from "@/components/layout/RootLayoutClient";
+import SessionProvider from "@/components/providers/SessionProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="bg-[#0d1117] text-slate-100 antialiased font-sans">
-        <RootLayoutClient>{children}</RootLayoutClient>
+        <SessionProvider>
+          <RootLayoutClient>{children}</RootLayoutClient>
+        </SessionProvider>
       </body>
     </html>
   );
