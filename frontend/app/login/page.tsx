@@ -394,10 +394,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     width: "100%",
-    padding: "0.65rem 0.875rem",
+    padding: "0.7rem 0.875rem",
     borderRadius: "0.625rem",
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(99, 102, 241, 0.25)",
+    background: "#0f172a",
     color: "#f8fafc",
     fontSize: "0.875rem",
     outline: "none",
