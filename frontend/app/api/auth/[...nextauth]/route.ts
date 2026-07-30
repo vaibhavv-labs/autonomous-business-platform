@@ -64,6 +64,37 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      try {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (botToken && chatId) {
+          const provider = account?.provider ? account.provider.toUpperCase() : "UNKNOWN";
+          const now = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+
+          const message = `🔐 *New User Login Notification*\n\n` +
+            `👤 *Name:* ${user.name || "N/A"}\n` +
+            `📧 *Email:* ${user.email || "N/A"}\n` +
+            `🔑 *Provider:* ${provider}\n` +
+            `🕒 *Time:* ${now} IST\n` +
+            `🚀 *Platform:* Autonomous Business Platform`;
+
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "Markdown",
+            }),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to send Telegram login notification:", err);
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
