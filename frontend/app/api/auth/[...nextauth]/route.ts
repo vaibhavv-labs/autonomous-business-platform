@@ -26,9 +26,9 @@ const handler = NextAuth({
         if (credentials?.isGuest === "true") {
           return {
             id: "guest_" + Math.random().toString(36).substring(2, 9),
-            name: "Guest User",
+            name: "Guest",
             email: "guest@abp-platform.ai",
-            image: "https://api.dicebear.com/7.x/bottts/svg?seed=ABP_Guest",
+            image: "/guest-avatar.jpg",
           };
         }
 

@@ -42,8 +42,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       .sort((a, b) => b.length - a.length)[0] || "/";
   const { title, subtitle } = pageTitles[matchedKey] || pageTitles["/"];
 
-  const user     = session?.user || { name: "User", email: "user@abp.ai", image: null };
-  const initials = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "U";
+  const user     = session?.user || { name: "Guest", email: "guest@abp-platform.ai", image: "/guest-avatar.jpg" };
+  const isGuest  = user?.email === "guest@abp-platform.ai";
+  const initials = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "G";
 
   return (
     <header
@@ -102,36 +103,57 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           🤖 <span className="hidden sm:inline">Otto AI</span>
         </button>
 
-        {/* Avatar (display only, no dropdown) */}
-        <div
-          style={{
-            width:          "34px",
-            height:         "34px",
-            borderRadius:   "50%",
-            overflow:       "hidden",
-            border:         "2px solid rgba(99,102,241,0.5)",
-            flexShrink:     0,
-            background:     "linear-gradient(135deg,#6366f1,#a78bfa)",
-            display:        "flex",
-            alignItems:     "center",
-            justifyContent: "center",
-            fontSize:       "0.72rem",
-            fontWeight:     700,
-            color:          "white",
-          }}
-          title={user.name ?? "User"}
-        >
-          {user.image ? (
-            <Image
-              src={user.image}
-              alt={user.name ?? "User"}
-              width={34}
-              height={34}
-              style={{ objectFit: "cover", width: "100%", height: "100%" }}
-            />
-          ) : (
-            initials
+        {/* Avatar + Guest Badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0 }}>
+          {isGuest && (
+            <span
+              style={{
+                fontSize:       "0.65rem",
+                fontWeight:     700,
+                padding:        "0.15rem 0.5rem",
+                borderRadius:   "9999px",
+                background:     "rgba(16,185,129,0.12)",
+                border:         "1px solid rgba(16,185,129,0.3)",
+                color:          "#34d399",
+                letterSpacing:  "0.05em",
+                textTransform:  "uppercase",
+                whiteSpace:     "nowrap",
+              }}
+            >
+              Guest
+            </span>
           )}
+          <div
+            style={{
+              width:          "34px",
+              height:         "34px",
+              borderRadius:   "50%",
+              overflow:       "hidden",
+              border:         isGuest ? "2px solid rgba(16,185,129,0.6)" : "2px solid rgba(99,102,241,0.5)",
+              flexShrink:     0,
+              background:     "linear-gradient(135deg,#6366f1,#a78bfa)",
+              display:        "flex",
+              alignItems:     "center",
+              justifyContent: "center",
+              fontSize:       "0.72rem",
+              fontWeight:     700,
+              color:          "white",
+            }}
+            title={isGuest ? "Guest Account" : (user.name ?? "User")}
+          >
+            {user.image ? (
+              <Image
+                src={user.image}
+                alt={user.name ?? "User"}
+                width={34}
+                height={34}
+                style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                unoptimized={user.image.startsWith("/")}
+              />
+            ) : (
+              initials
+            )}
+          </div>
         </div>
 
         {/* ── SIGN OUT — plain visible link, no dropdown, no z-index ── */}
