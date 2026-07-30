@@ -123,6 +123,16 @@ const defaultContacts: Contact[] = [
   },
 ];
 
+export interface ScheduledPost {
+  id: string;
+  title: string;
+  content: string;
+  platform: string;
+  scheduled_time: string;
+  status: string;
+  created_at: string;
+}
+
 // In-Memory Global Store for Vercel Lambdas
 declare global {
   /* eslint-disable no-var */
@@ -131,6 +141,7 @@ declare global {
     products: Product[];
     contacts: Contact[];
     campaigns: Campaign[];
+    scheduled_posts: ScheduledPost[];
     jobs: Record<string, any>;
   } | undefined;
 }
@@ -141,6 +152,17 @@ if (!globalThis.__ABP_STORE__) {
     products: defaultProducts,
     contacts: defaultContacts,
     campaigns: [],
+    scheduled_posts: [
+      {
+        id: "sch_1",
+        title: "Product Launch Announcement",
+        content: "🚀 Excited to unveil our brand new AI Product Studio! Check out the future of design. #AI #Innovation",
+        platform: "Twitter/X",
+        scheduled_time: new Date(Date.now() + 86400000).toISOString(),
+        status: "Scheduled",
+        created_at: new Date().toISOString(),
+      }
+    ],
     jobs: {},
   };
 }

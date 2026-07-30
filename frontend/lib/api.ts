@@ -251,3 +251,20 @@ export const sendEmailOutreach = (body: {
   from_name?: string;
 }): Promise<{ success: boolean; provider: string; id: string; message: string }> =>
   fetchAPI("/api/email/send", { method: "POST", body: JSON.stringify(body) });
+
+// ─── Scheduled Posts API ──────────────────────────────────────
+export interface DBScheduledPost {
+  id: string;
+  title: string;
+  content: string;
+  platform: string;
+  scheduled_time: string;
+  status: string;
+  created_at: string;
+}
+
+export const getScheduledPosts = (): Promise<{ scheduled_posts: DBScheduledPost[] }> => fetchAPI("/api/schedule");
+export const createScheduledPost = (body: Partial<DBScheduledPost>): Promise<{ post: DBScheduledPost; message: string }> =>
+  fetchAPI("/api/schedule", { method: "POST", body: JSON.stringify(body) });
+export const deleteScheduledPost = (id: string): Promise<{ message: string }> =>
+  fetchAPI(`/api/schedule/${id}`, { method: "DELETE" });
