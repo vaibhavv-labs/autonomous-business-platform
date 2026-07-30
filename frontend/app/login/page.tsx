@@ -155,7 +155,7 @@ export default function LoginPage() {
                 placeholder="Alex Morgan"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={styles.input}
+                className="auth-input"
                 required={isSignUp}
               />
             </div>
@@ -168,7 +168,7 @@ export default function LoginPage() {
               placeholder="alex@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
+              className="auth-input"
               required
             />
           </div>
@@ -180,7 +180,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
+              className="auth-input"
               required
             />
           </div>
@@ -270,6 +270,40 @@ export default function LoginPage() {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-input {
+          width: 100% !important;
+          padding: 0.75rem 0.875rem !important;
+          border-radius: 0.625rem !important;
+          border: 1px solid rgba(99, 102, 241, 0.3) !important;
+          background-color: #0f172a !important;
+          color: #f8fafc !important;
+          font-size: 0.875rem !important;
+          outline: none !important;
+          transition: all 0.2s ease !important;
+        }
+
+        .auth-input:focus {
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+          background-color: #0f172a !important;
+        }
+
+        /* Direct Autofill Elimination */
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus,
+        .auth-input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+          -webkit-text-fill-color: #ffffff !important;
+          caret-color: #ffffff !important;
+          transition: background-color 50000s ease-in-out 0s !important;
+        }
+
+        .auth-input::placeholder {
+          color: #64748b !important;
+          opacity: 1 !important;
         }
       `}</style>
     </div>
@@ -391,17 +425,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "0.78rem",
     color: "#cbd5e1",
     fontWeight: 500,
-  },
-  input: {
-    width: "100%",
-    padding: "0.7rem 0.875rem",
-    borderRadius: "0.625rem",
-    border: "1px solid rgba(99, 102, 241, 0.25)",
-    background: "#0f172a",
-    color: "#f8fafc",
-    fontSize: "0.875rem",
-    outline: "none",
-    transition: "border 0.2s",
   },
   primaryBtn: {
     width: "100%",
