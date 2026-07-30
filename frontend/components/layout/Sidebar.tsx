@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { signOut } from "next-auth/react";
 
 const navItems = [
   { href: "/",           icon: "🏠", label: "Dashboard" },
@@ -34,14 +33,27 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
-    // Clear any local caches
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-      sessionStorage.clear();
+    try {
+      // Step 1: Get CSRF token from NextAuth
+      const csrfRes = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfRes.json();
+
+      // Step 2: POST to destroy the session cookie server-side
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
+    } catch (err) {
+      console.error("SignOut fetch error:", err);
     }
-    // signOut with redirect:true lets NextAuth clear the http-only session
-    // cookie server-side before navigating — the most reliable method.
-    await signOut({ callbackUrl: "/login" });
+
+    // Step 3: Clear client-side storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Step 4: Hard navigate to login
+    window.location.href = "/login";
   };
 
   const SidebarInner = (

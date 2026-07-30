@@ -1,7 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
@@ -59,14 +59,27 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
   const handleSignOut = async () => {
     setMenuOpen(false);
-    // Clear any local caches
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-      sessionStorage.clear();
+    try {
+      // Step 1: Get CSRF token from NextAuth
+      const csrfRes = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfRes.json();
+
+      // Step 2: POST to NextAuth signout endpoint to destroy the session cookie
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
+    } catch (err) {
+      console.error("SignOut fetch error:", err);
     }
-    // signOut with redirect:true lets NextAuth clear the http-only session
-    // cookie server-side before navigating — the most reliable method.
-    await signOut({ callbackUrl: "/login" });
+
+    // Step 3: Clear any client-side storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Step 4: Hard navigate to login — no React router, forces full page reload
+    window.location.href = "/login";
   };
 
   return (
