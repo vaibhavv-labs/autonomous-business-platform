@@ -231,19 +231,22 @@ export default function ChatPage() {
         </>
       )}
 
-      {/* ── Input bar — always visible, never clipped ────────── */}
+      {/* ── Input bar: textarea on top, Send button below ───── */}
       <div
-        className="glass-card flex gap-2 sm:gap-3 items-end flex-shrink-0"
+        className="glass-card flex-shrink-0"
         style={{
-          padding: "0.625rem",
-          paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))",
+          padding: "0.75rem",
+          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
         }}
       >
         <textarea
           ref={textareaRef}
-          className="input-field flex-1 resize-none"
-          rows={2}
-          placeholder="Ask Otto anything… (Enter to send)"
+          className="input-field w-full resize-none"
+          rows={3}
+          placeholder="Ask Otto anything… (Shift+Enter for new line, Enter to send)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -252,21 +255,20 @@ export default function ChatPage() {
               send();
             }
           }}
-          style={{ fontSize: "1rem" }}
+          style={{ fontSize: "1rem", width: "100%" }}
         />
         <button
-          className="btn-primary flex-shrink-0"
+          className="btn-primary"
           onClick={send}
           disabled={loading || !input.trim()}
           style={{
-            height: "52px",
-            minWidth: "68px",
-            paddingLeft: "1rem",
-            paddingRight: "1rem",
-            alignSelf: "flex-end",
+            width: "100%",
+            height: "44px",
+            justifyContent: "center",
+            fontSize: "0.9rem",
           }}
         >
-          {loading ? "⏳" : "Send ›"}
+          {loading ? "⏳ Thinking..." : "Send ›"}
         </button>
       </div>
     </div>
