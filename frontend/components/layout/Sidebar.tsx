@@ -34,12 +34,14 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
-    try {
-      await signOut({ callbackUrl: "/login", redirect: true });
-    } catch {
-      // Fallback
+    // Clear any local caches
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
     }
-    window.location.href = "/login";
+    // signOut with redirect:true lets NextAuth clear the http-only session
+    // cookie server-side before navigating — the most reliable method.
+    await signOut({ callbackUrl: "/login" });
   };
 
   const SidebarInner = (
