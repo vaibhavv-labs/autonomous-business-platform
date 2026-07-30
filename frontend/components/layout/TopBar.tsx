@@ -178,7 +178,11 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
                 {/* Sign out */}
                 <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    await signOut({ callbackUrl: "/login", redirect: false });
+                    window.location.href = "/login";
+                  }}
                   style={{
                     width:      "100%",
                     padding:    "0.75rem 1rem",
