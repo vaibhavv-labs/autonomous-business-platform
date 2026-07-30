@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { store } from "../../../store";
+import { store } from "@/app/api/store";
 
 export async function GET() {
   const totalCustomers = store.customers.length;
