@@ -219,3 +219,35 @@ export const updateDBProduct = (id: string, body: Partial<DBProduct>): Promise<{
   fetchAPI(`/api/products/db/${id}`, { method: "PUT", body: JSON.stringify(body) });
 export const deleteDBProduct = (id: string): Promise<{ message: string }> =>
   fetchAPI(`/api/products/db/${id}`, { method: "DELETE" });
+
+// ─── Campaigns DB API ─────────────────────────────────────────
+export interface DBCampaign {
+  id: string;
+  name: string;
+  product: string;
+  audience: string;
+  budget: number;
+  platforms: string[];
+  goal: string;
+  tone: string;
+  strategy: string;
+  social_posts: string;
+  email: string;
+  created_at: string;
+}
+
+export const getDBCampaigns = (): Promise<{ campaigns: DBCampaign[] }> => fetchAPI("/api/campaigns/db");
+export const createDBCampaign = (body: Partial<DBCampaign>): Promise<{ campaign: DBCampaign; message: string }> =>
+  fetchAPI("/api/campaigns/db", { method: "POST", body: JSON.stringify(body) });
+export const deleteDBCampaign = (id: string): Promise<{ message: string }> =>
+  fetchAPI(`/api/campaigns/db/${id}`, { method: "DELETE" });
+
+// ─── Real Email Outreach API ─────────────────────────────────
+export const sendEmailOutreach = (body: {
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  from_name?: string;
+}): Promise<{ success: boolean; provider: string; id: string; message: string }> =>
+  fetchAPI("/api/email/send", { method: "POST", body: JSON.stringify(body) });

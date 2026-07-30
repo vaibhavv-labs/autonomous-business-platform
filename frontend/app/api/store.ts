@@ -36,6 +36,21 @@ export interface Product {
   created_at: string;
 }
 
+export interface Campaign {
+  id: string;
+  name: string;
+  product: string;
+  audience: string;
+  budget: number;
+  platforms: string[];
+  goal: string;
+  tone: string;
+  strategy: string;
+  social_posts: string;
+  email: string;
+  created_at: string;
+}
+
 // Initial Seed Data
 const defaultCustomers: Customer[] = [
   { id: "1", name: "Emma Johnson", email: "emma@example.com", product: "Eco Tote Bag", status: "Active", spent: 124, joined: "2024-01-15", created_at: new Date().toISOString() },
@@ -115,6 +130,7 @@ declare global {
     customers: Customer[];
     products: Product[];
     contacts: Contact[];
+    campaigns: Campaign[];
     jobs: Record<string, any>;
   } | undefined;
 }
@@ -124,6 +140,7 @@ if (!globalThis.__ABP_STORE__) {
     customers: defaultCustomers,
     products: defaultProducts,
     contacts: defaultContacts,
+    campaigns: [],
     jobs: {},
   };
 }
