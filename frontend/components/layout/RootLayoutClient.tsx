@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
+import BackendStatus from "@/components/layout/BackendStatus";
 
 export default function RootLayoutClient({
   children,
@@ -22,6 +23,7 @@ export default function RootLayoutClient({
           <div className="p-3 sm:p-4 md:p-6 max-w-full">{children}</div>
         </main>
       </div>
+      <BackendStatus />
     </div>
   );
 }
