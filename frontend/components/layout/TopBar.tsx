@@ -76,7 +76,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       </div>
 
       {/* Right — Controls */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
 
         {/* AI Live */}
         <div
@@ -104,9 +104,10 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         </button>
 
         {/* Avatar + Guest Badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
           {isGuest && (
             <span
+              className="hidden sm:inline"
               style={{
                 fontSize:       "0.65rem",
                 fontWeight:     700,
