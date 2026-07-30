@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { href: "/",           icon: "🏠", label: "Dashboard" },
@@ -31,6 +32,15 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   useEffect(() => {
     if (onMobileClose) onMobileClose();
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSignOut = async () => {
+    try {
+      await signOut({ callbackUrl: "/login", redirect: true });
+    } catch {
+      // Fallback
+    }
+    window.location.href = "/login";
+  };
 
   const SidebarInner = (
     <aside
@@ -135,6 +145,19 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
               </Link>
             );
           })}
+
+          {/* Dedicated Sign Out nav button */}
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-left mt-2"
+            style={{ borderLeft: "2px solid transparent" }}
+            title={collapsed ? "Sign Out" : undefined}
+          >
+            <span className="text-base leading-none flex-shrink-0">🚪</span>
+            {!collapsed && (
+              <span className="text-sm font-medium truncate">Sign Out</span>
+            )}
+          </button>
         </div>
       </nav>
 
@@ -253,6 +276,14 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                   </Link>
                 );
               })}
+
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-left mt-2"
+              >
+                <span className="text-base leading-none flex-shrink-0">🚪</span>
+                <span className="text-sm font-medium truncate">Sign Out</span>
+              </button>
             </div>
           </nav>
 
