@@ -286,15 +286,18 @@ async def _run_image_generation(job_id: str, req: ImageRequest):
         _update_job(job_id, progress=40, logs=["Generating with Flux AI (free)..."])
 
         images = []
+        variations = [
+            "masterpiece, studio lighting",
+            "vibrant colors, crisp focus",
+            "8k resolution, elegant detail",
+            "professional product design",
+        ]
+        import random
         for i in range(req.num_outputs):
-            url = _image_url(prompt, req.width, req.height, seed=42 + i * 13)
-            # Verify the URL resolves
-            try:
-                async with httpx.AsyncClient(timeout=30) as client:
-                    r = await client.head(url, follow_redirects=True)
-                    images.append(str(r.url) if r.status_code == 200 else url)
-            except Exception:
-                images.append(url)  # use URL directly even if HEAD fails
+            seed = random.randint(100000, 999999)
+            p_variant = f"{prompt}, {variations[i % len(variations)]}"
+            url = _image_url(p_variant, req.width, req.height, seed=seed)
+            images.append(url)
             _update_job(job_id, progress=40 + int(55 * (i + 1) / req.num_outputs),
                         logs=[f"Image {i+1}/{req.num_outputs} ready"])
 

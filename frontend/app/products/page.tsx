@@ -333,7 +333,20 @@ export default function ProductsPage() {
                     <div key={i} className="glass-card overflow-hidden group space-y-2 p-3">
                       <div className="relative rounded-lg overflow-hidden bg-black/40" style={{ minHeight: 200 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`Design ${i + 1}`} className="w-full object-cover rounded-lg" style={{ maxHeight: 300 }} />
+                        <img
+                          src={url}
+                          alt={`Design ${i + 1}`}
+                          className="w-full object-cover rounded-lg"
+                          style={{ maxHeight: 300, display: "block" }}
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (!img.dataset.retried) {
+                              img.dataset.retried = "true";
+                              const altSeed = Math.floor(Math.random() * 999999);
+                              img.src = `${url}&retry=${altSeed}`;
+                            }
+                          }}
+                        />
                       </div>
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-xs font-semibold text-slate-300">Design #{i + 1}</span>

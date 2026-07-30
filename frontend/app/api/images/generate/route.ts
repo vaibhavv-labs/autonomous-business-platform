@@ -9,12 +9,22 @@ export async function POST(req: NextRequest) {
     const width = body.width || 1024;
     const height = body.height || 1024;
     const numOutputs = body.num_outputs || 2;
+    const style = body.style || "";
+
+    const variations = [
+      "highly detailed masterpiece, studio lighting",
+      "cinematic composition, vibrant colors, crisp focus",
+      "trending on artstation, 8k resolution, elegant detail",
+      "award winning artwork, professional product design",
+    ];
 
     const images = [];
     for (let i = 0; i < numOutputs; i++) {
-      const seed = Math.floor(Math.random() * 10000);
-      const encoded = encodeURIComponent(prompt + (body.style ? `, ${body.style} style` : ""));
-      images.push(`https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
+      const seed = Math.floor(Math.random() * 900000) + 100000;
+      const ts = Date.now() + i * 250;
+      const promptText = `${prompt}${style ? `, ${style} style` : ""}, ${variations[i % variations.length]}`;
+      const encoded = encodeURIComponent(promptText);
+      images.push(`https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}&ts=${ts}`);
     }
 
     store.jobs[jobId] = {
