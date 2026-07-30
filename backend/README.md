@@ -2,70 +2,51 @@
 
 <h1> ⚙️ ABP - FastAPI Backend </h1>
 
-**The highly robust, async Python REST API for the Autonomous Business Platform.**
+**The high-performance, rate-limited Python REST API & SQLite Database for the Autonomous Business Platform.**
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-Llama_3-f55036?style=for-the-badge&logo=groq&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest-Test_Suite-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
-> **Note:** For the full project documentation and architecture, please see the [Main Project README](../README.md).
+> **Note:** For full project documentation, see the [Main Monorepo README](../README.md).
 
 </div>
 
 ---
 
-## ⚙️ Overview
+## ⚙️ Capabilities & Architecture
 
-This directory contains the FastAPI server that orchestrates all AI generation tasks. It serves as the brain for the autonomous business platform, managing tasks between the frontend dashboard and external model providers.
-
-**Key Capabilities:**
-- Handles real-time chat with the "Otto" AI agent (powered by Groq/Llama 3).
-- Queues and manages long-running asynchronous jobs.
-- Direct integration with Replicate APIs for text-to-image (Flux) and text-to-video (Sora) generation.
-- Built-in polling endpoints to allow the Next.js frontend to securely retrieve generated assets without timeouts.
+- **FastAPI Core (`api_server.py`)**: Asynchronous endpoints for AI generation, chat, and database management.
+- **SQLite Database Manager (`database.py`)**: Persistent SQLite tables for `customers`, `contacts`, `products`, and `campaigns`.
+- **Sliding Window Rate Limiter**: IP-based rate limiting middleware capping requests at 60 req/min per IP to prevent API quota burn.
+- **Strict Pydantic Validation**: All requests validated with `pydantic.Field` length & numeric range constraints.
+- **Sanitized Error Handlers**: Custom exception handlers ensure zero raw Python stack traces are exposed to users.
+- **Pytest Suite (`tests/test_api.py`)**: 5 unit & integration tests covering root status, Pydantic validation rejection, and full CRUD lifecycles.
 
 ---
 
-## 🚀 Running Locally
+## 🧪 Running Tests
 
-### Prerequisites
-- Python 3.11 or higher installed.
-
-### 1. Setup Virtual Environment (Recommended)
 ```bash
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+cd backend
+python -m pytest tests/test_api.py -v
 ```
 
-### 2. Install Dependencies
-```bash
-pip install -r requirements_railway.txt
-```
+---
 
-### 3. Environment Variables
-Create a `.env` file or export these variables in your terminal:
+## 🚀 Running Backend Locally
+
+### 1. Environment Setup
+Create a `.env` file in `backend/`:
 ```env
-GROQ_API_KEY=your_groq_api_key_here
-REPLICATE_API_TOKEN=your_replicate_token_here
+GROQ_API_KEY=your_groq_api_key
 ```
 
-### 4. Start the Server
+### 2. Install Dependencies & Start
 ```bash
-uvicorn api_server:app --host 0.0.0.0 --port 8000 --reload
+pip install -r requirements.txt
+python api_server.py
 ```
 
-The API will start at [http://127.0.0.1:8000](http://127.0.0.1:8000). You can view the auto-generated Swagger UI docs at `http://127.0.0.1:8000/docs`.
-
----
-
-## ☁️ Deployment
-
-This backend is pre-configured to deploy easily on **Render** (Free Tier compatible) using the included `requirements_railway.txt` file.
-
-**Render Settings:**
-- **Root Directory:** `backend`
-- **Build Command:** `pip install -r requirements_railway.txt`
-- **Start Command:** `uvicorn api_server:app --host 0.0.0.0 --port 10000`
+The API will start at `http://127.0.0.1:8000`. Interactive Swagger UI documentation is available at `http://127.0.0.1:8000/docs`.

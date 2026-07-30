@@ -1,145 +1,138 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Space+Mono&size=30&pause=1000&color=6366f1&center=true&vCenter=true&width=800&lines=Autonomous+Business+Platform+%F0%9F%9A%80;Decoupled+Next.js+%2B+FastAPI+Architecture;Groq+Llama+3+%C2%B7+Replicate+Flux+%C2%B7+AI+Agents;Smart+Content+Generation+%26+Automation" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Space+Mono&size=30&pause=1000&color=6366f1&center=true&vCenter=true&width=800&lines=Autonomous+Business+Platform+%F0%9F%9A%80;Enterprise+AI+SaaS+Monorepo;Groq+Llama+3.3+70B+%C2%B7+Flux+AI+%C2%B7+Resend.com;Rate+Limited+%C2%B7+Pytest+Tested+%C2%B7+GitHub+Actions+CI" alt="Typing SVG" />
 
 <br/>
 
-![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16_App_Router-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-Llama_3-f55036?style=for-the-badge&logo=groq&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Deployment-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Render](https://img.shields.io/badge/Render-Hosting-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-f55036?style=for-the-badge&logo=groq&logoColor=white)
+![Resend](https://img.shields.io/badge/Resend.com-Email_Outreach-000000?style=for-the-badge&logo=resend&logoColor=white)
+![CI/CD](https://img.shields.io/badge/GitHub_Actions-CI_Passed-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Production_Live-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
 <br/>
 
-> ⚡ **A fully automated, AI-powered SaaS platform for running a business. Generates ad copy, creates product videos, handles social media campaigns, and organizes workflows using cutting-edge LLMs and Image/Video Generation APIs.**
+> ⚡ **Autonomous Business Platform (ABP) is a complete, enterprise-grade AI SaaS platform. It autonomously generates multi-channel marketing campaigns, renders 1024×1024 product designs via Flux AI, dispatches real email outreach via Resend.com, schedules social media posts, and provides live analytics with automated testing & rate limiting.**
 > 
-> 🔗 **[Live Demo: autonomous-business-platform-dskp.vercel.app](https://autonomous-business-platform-dskp.vercel.app)**
-
-<br/>
-
-![Header](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6&height=120&section=header&text=ABP&fontSize=40&fontColor=ffffff&animation=fadeIn&desc=Autonomous+Business+Platform&descSize=15&descAlignY=78)
+> 🔗 **[Live Production Site](https://autonomous-business-platform-master.vercel.app)**
 
 </div>
 
 ---
 
-## 🚀 Features
+## 🚀 Key Modules & Capabilities
 
-| Feature | Description |
+| Module | Feature & Capabilities |
 |---|---|
-| 🤖 **AI Agents & Chat** | Interact with "Otto", your personal AI business assistant powered by Groq & Llama 3. |
-| 🎨 **Image & Video Generation** | Instantly create high-quality product images and video clips via Replicate, Flux, and Sora models. |
-| 📱 **Social Media Automation** | Generate complete marketing campaigns, captions, and posts for multi-platform deployment. |
-| ⚡ **Next.js App Router** | Highly responsive, premium client-side user interface with mobile-first slide-out sidebars. |
-| 🚄 **FastAPI Backend** | Robust Python backend capable of queuing complex AI jobs and returning real-time data. |
-| 🌙 **Premium Dark Mode UI** | Beautiful, sleek aesthetics featuring glassmorphism and modern CSS styling. |
-| 📊 **Analytics & Campaigns** | Track business performance, manage customer data, and monitor AI workflows from one dashboard. |
+| 🎨 **AI Product Studio** | Render high-res 1024×1024 product mockups with Pollinations Flux AI, client retries, unique seeds, and persistent product catalog management. |
+| 🎯 **Campaign Creator** | Multi-channel AI marketing strategies (strategy, social posts, email sequences) with 1-click **💾 Save to DB** and **Saved History** tab. |
+| 📝 **AI Content Studio** | Generate SEO blog posts, social captions, and emails with **🐦 1-Click Twitter/X Share**, **📄 PDF Export Generator**, and **📅 Post Scheduler**. |
+| 💌 **Email Outreach & Resend** | Integrated with **Resend.com API** for sending real emails + CRM Recipient selector to pick directly from saved Customers or Contacts. |
+| 🤖 **Otto AI Assistant** | Instant business strategy chat powered by **Groq LLaMA 3.3 70B** versatile model. |
+| 👥 **Contact Studio & CRM** | AI influencer finder + persistent Contacts DB with bulk import and strategy notes. |
+| 📊 **Live Analytics Engine** | Real-time calculations for Total Revenue, Customers, Designs, Contacts, and AI Campaigns with interactive Recharts. |
+| 📅 **Workflows & Post Scheduler** | Manage, inspect, and cancel scheduled social media posts queue. |
+| 🛡️ **Security & Stability** | Sliding window IP rate limiter (60 req/min), strict Pydantic validation (`Field` constraints), and sanitized JSON error handlers. |
+| 🧪 **Pytest & GitHub Actions CI** | 5 automated backend unit/integration tests and GitHub Actions CI workflow running on every push. |
 
 ---
 
-## 🧠 AI Model Architecture
+## 🧠 AI Models & Integrations
 
-| Property | Details |
-|---|---|
-| Brain / Logic (Fast Text) | `llama3-8b-8192` (via Groq for instant inference) |
-| Image Generation | `black-forest-labs/flux-schnell` (via Replicate) / Pollinations AI |
-| Video Generation | Text-to-Video models (via Replicate APIs) |
-| Architecture | Next.js Client → FastAPI REST Backend → External AI APIs |
+| Layer | Provider / Model | Purpose |
+|---|---|---|
+| **Text Generation / Assistant** | Groq `llama-3.3-70b-versatile` | High-speed LLM inference for Otto chat and content creation |
+| **Image Generation** | Pollinations / Flux AI | 1024×1024 high-resolution product photography & mockups |
+| **Email Delivery** | Resend.com API | Commercial email dispatch with simulated fallback |
+| **Security Alerts** | Telegram Bot Webhook (`@AbpMonitorBot`) | Real-time Markdown notifications sent on user login |
+| **Database & Storage** | SQLite + Next.js Serverless Store (`store.ts`) | Dual persistence ensuring zero data loss on Vercel lambdas |
 
 ---
 
-## 🛠️ How It Works (Decoupled System)
+## 🛠️ Architecture & Data Flow
 
 ```text
-  📱 User Interaction (Next.js Dashboard)
-           ⬇️
-           ⬇️ HTTP GET / POST
-  🌐 Vercel Frontend Edge Network
-           ⬇️
-           ⬇️ API Call to backend (/api/chat, /api/generate)
-  ⚙️ FastAPI Backend on Render
-           ⬇️
-           ⬇️ Async Job Queueing
-  🤖 External APIs (Groq / Replicate / Pollinations)
-           ⬇️
-           ⬇️ Real-time Streaming & Polling
-  📈 Final Content Delivered to UI
+  📱 Next.js 16 Client (App Router + Turbopack)
+           │
+           ├── 🔐 NextAuth Session + Telegram Monitor Alert
+           │
+           ├── 🌐 Next.js Serverless API Routes (/app/api/...)
+           │       ├── Resend.com Email Sender (/api/email/send)
+           │       ├── Real Live Analytics (/api/analytics/overview)
+           │       ├── Campaigns DB Store (/api/campaigns/db)
+           │       └── Scheduled Posts Queue (/api/schedule)
+           │
+           └── ⚙️ FastAPI Python Backend (Port 8000)
+                   ├── IP Rate Limiting Middleware (60 req/min)
+                   ├── Strict Pydantic Field Validation
+                   ├── SQLite DB (customers, contacts, products, campaigns)
+                   └── Groq LLaMA 3.3 70B Engine
 ```
 
 ---
 
-## 💻 Tech Stack
+## 🧪 Testing & CI/CD Pipeline
 
-| Technology | Purpose |
-|---|---|
-| **Next.js 15 & React 19** | Frontend Framework and UI Rendering |
-| **TailwindCSS** | Utility-first responsive styling and layout |
-| **Python 3.11+** | Backend scripting and logic |
-| **FastAPI & Uvicorn** | High-performance REST API |
-| **Groq SDK** | Ultra-fast LLM inference |
-| **Replicate API** | Cloud-based Image and Video Generation |
+Backend unit and integration tests are located in `backend/tests/test_api.py` and run automatically on every commit via GitHub Actions (`.github/workflows/ci.yml`).
+
+### Running Tests Locally:
+```bash
+cd backend
+python -m pytest tests/test_api.py -v
+```
 
 ---
 
-## 📁 Project Structure (Monorepo)
+## 📁 Repository Structure (Monorepo)
 
 ```text
 autonomous-business-platform/
-├── frontend/                     # 🌐 Next.js Application
-│   ├── app/                      # Page routing & layouts
-│   ├── components/layout/        # Sidebar, Topbar, RootLayout
-│   ├── lib/                      # API endpoints & polling logic
-│   └── public/                   # Static assets & SVG icons
+├── .github/
+│   └── workflows/ci.yml         # 🤖 GitHub Actions CI Workflow
 │
-└── backend/                      # ⚙️ FastAPI Server
-    ├── app/                      # Backend endpoints & configurations
-    ├── modules/                  # Business logic (Video, Audio, AI Generation)
-    ├── api_server.py             # Main FastAPI entry point
-    └── requirements.txt          # Python dependencies
+├── frontend/                     # 🌐 Next.js 16 Application
+│   ├── app/                      # App Router pages (products, campaigns, content, etc.)
+│   │   ├── api/                  # Serverless API routes (email, analytics, store)
+│   │   └── ...                   # Custom pages & components
+│   ├── components/               # Glassmorphic layout & provider components
+│   └── lib/                      # Unified API client & TypeScript interfaces
+│
+└── backend/                      # ⚙️ FastAPI Backend
+    ├── api_server.py             # FastAPI server with Rate Limiting & Pydantic models
+    ├── database.py               # SQLite Database Manager & CRUD helpers
+    └── tests/                    # 🧪 Pytest test suite (test_api.py)
 ```
 
 ---
 
-## ⚙️ Local Setup
+## 💻 Local Development Setup
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/vaibhavv-labs/autonomous-business-platform.git
-cd autonomous-business-platform
-```
-
-### 2. Setup the Backend (Terminal 1)
+### 1. Backend Setup
 ```bash
 cd backend
-pip install -r requirements_railway.txt
-# Set your environment variables (GROQ_API_KEY, REPLICATE_API_TOKEN)
-uvicorn api_server:app --host 0.0.0.0 --port 8000 --reload
-```
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
 
-### 3. Setup the Frontend (Terminal 2)
+pip install -r requirements.txt
+python api_server.py
+```
+*Backend runs at `http://localhost:8000` (Swagger docs at `/docs`)*
+
+### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-### 4. Open the App
-Visit [http://localhost:3000](http://localhost:3000) in your browser. The frontend will automatically route API requests to your local FastAPI backend running on port 8000.
-
----
-
-## 👨‍💻 Contributor
-
-**Vaibhav Bhoyate** (Creator/Author)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/vaibhav-bhoyate-6328802a9/)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/vaibhavv-labs)
+*Frontend runs at `http://localhost:3000`*
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**.
+Distributed under the MIT License. See `LICENSE` for details.
