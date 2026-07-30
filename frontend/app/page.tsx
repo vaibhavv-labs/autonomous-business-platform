@@ -240,7 +240,7 @@ export default function DashboardPage() {
             <QuickAction icon="🎯" label="Create Campaign" description="Full AI-powered marketing campaign" onClick={handleQuickCampaign} loading={loading.campaign} />
             <QuickAction icon="🎨" label="Generate Images" description="AI product or design images" onClick={handleQuickImage} loading={loading.image} />
             <QuickAction icon="📝" label="Write Content" description="Blog posts, social media, ad copy" onClick={() => window.location.href = "/content"} />
-            <QuickAction icon="🎬" label="Produce Video" description="AI promotional video generation" onClick={() => window.location.href = "/video"} />
+            <QuickAction icon="📧" label="Email Outreach" description="AI-powered email campaign management" onClick={() => window.location.href = "/email"} />
           </div>
         </div>
 
