@@ -2,34 +2,63 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * GET /api/logout
- *
- * Server-side logout that directly clears all NextAuth session cookies
- * and redirects to /login. This bypasses next-auth/react's signOut()
- * wrapper entirely — works reliably across all Next.js + React versions.
+ * Clears all NextAuth session cookies server-side and redirects to /login.
+ * This is the most reliable sign-out method — no client-side JS required.
  */
 export async function GET(request: NextRequest) {
   const loginUrl = new URL("/login", request.url);
-  const response = NextResponse.redirect(loginUrl);
 
-  // NextAuth JWT session cookies (HTTP + HTTPS variants)
-  const cookieNames = [
+  // Build redirect response
+  const response = NextResponse.redirect(loginUrl, { status: 302 });
+
+  // All possible NextAuth cookie names (HTTP dev + HTTPS prod variants)
+  const httpCookies = [
     "next-auth.session-token",
-    "__Secure-next-auth.session-token",
     "next-auth.csrf-token",
-    "__Host-next-auth.csrf-token",
     "next-auth.callback-url",
+  ];
+
+  const secureCookies = [
+    "__Secure-next-auth.session-token",
     "__Secure-next-auth.callback-url",
   ];
 
-  const past = new Date(0);
+  const hostCookies = [
+    "__Host-next-auth.csrf-token",
+  ];
 
-  for (const name of cookieNames) {
-    // Expire via Set-Cookie header — works on both HTTP (dev) and HTTPS (prod)
+  // Delete HTTP cookies (dev)
+  for (const name of httpCookies) {
     response.cookies.set(name, "", {
-      expires: past,
-      path: "/",
+      maxAge:   0,
+      expires:  new Date(0),
+      path:     "/",
       httpOnly: true,
       sameSite: "lax",
+    });
+  }
+
+  // Delete __Secure- cookies (prod HTTPS) — must include secure:true
+  for (const name of secureCookies) {
+    response.cookies.set(name, "", {
+      maxAge:   0,
+      expires:  new Date(0),
+      path:     "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure:   true,
+    });
+  }
+
+  // Delete __Host- cookies — must have secure:true, path:"/", no domain
+  for (const name of hostCookies) {
+    response.cookies.set(name, "", {
+      maxAge:   0,
+      expires:  new Date(0),
+      path:     "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure:   true,
     });
   }
 
