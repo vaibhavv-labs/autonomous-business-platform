@@ -1,6 +1,7 @@
+import json
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -33,11 +34,11 @@ def init_db():
     cursor.execute("SELECT COUNT(*) as count FROM customers")
     if cursor.fetchone()["count"] == 0:
         sample_customers = [
-            ("1", "Emma Johnson", "emma@example.com", "Eco Tote Bag", "Active", 124.0, "2024-01-15", datetime.utcnow().isoformat()),
-            ("2", "Liam Chen", "liam@example.com", "Custom Hoodie", "Active", 89.0, "2024-02-20", datetime.utcnow().isoformat()),
-            ("3", "Sofia Martinez", "sofia@example.com", "Phone Case", "Inactive", 45.0, "2024-03-10", datetime.utcnow().isoformat()),
-            ("4", "Noah Williams", "noah@example.com", "Ceramic Mug Set", "Active", 210.0, "2024-03-22", datetime.utcnow().isoformat()),
-            ("5", "Ava Brown", "ava@example.com", "Wall Art Print", "VIP", 560.0, "2024-04-01", datetime.utcnow().isoformat()),
+            ("1", "Emma Johnson", "emma@example.com", "Eco Tote Bag", "Active", 124.0, "2024-01-15", datetime.now(timezone.utc).isoformat()),
+            ("2", "Liam Chen", "liam@example.com", "Custom Hoodie", "Active", 89.0, "2024-02-20", datetime.now(timezone.utc).isoformat()),
+            ("3", "Sofia Martinez", "sofia@example.com", "Phone Case", "Inactive", 45.0, "2024-03-10", datetime.now(timezone.utc).isoformat()),
+            ("4", "Noah Williams", "noah@example.com", "Ceramic Mug Set", "Active", 210.0, "2024-03-22", datetime.now(timezone.utc).isoformat()),
+            ("5", "Ava Brown", "ava@example.com", "Wall Art Print", "VIP", 560.0, "2024-04-01", datetime.now(timezone.utc).isoformat()),
         ]
         cursor.executemany(
             "INSERT INTO customers (id, name, email, product, status, spent, joined, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -93,6 +94,34 @@ def init_db():
     )
     """)
 
+    # 5. Scheduled Posts Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS scheduled_posts (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT DEFAULT '',
+        platform TEXT DEFAULT 'Twitter/X',
+        scheduled_time TEXT NOT NULL,
+        status TEXT DEFAULT 'Scheduled',
+        created_at TEXT NOT NULL
+    )
+    """)
+
+    cursor.execute("SELECT COUNT(*) as count FROM scheduled_posts")
+    if cursor.fetchone()["count"] == 0:
+        cursor.execute(
+            "INSERT INTO scheduled_posts (id, title, content, platform, scheduled_time, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "sch_1",
+                "Product Launch Announcement",
+                "🚀 Excited to unveil our brand new AI Product Studio! Check out the future of design. #AI #Innovation",
+                "Twitter/X",
+                datetime.now(timezone.utc).isoformat(),
+                "Scheduled",
+                datetime.now(timezone.utc).isoformat()
+            )
+        )
+
     conn.commit()
     conn.close()
 
@@ -113,7 +142,7 @@ def create_customer(data: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
     cust_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     joined_date = data.get("joined") or now[:10]
     cursor.execute(
         "INSERT INTO customers (id, name, email, product, status, spent, joined, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -178,7 +207,7 @@ def create_contact(data: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
     contact_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     cursor.execute(
         "INSERT INTO contacts (id, name, role, company, channel, score, strategy, email, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
@@ -248,7 +277,7 @@ def create_product(data: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
     prod_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     cursor.execute(
         "INSERT INTO products (id, title, prompt, style, color_palette, image_url, price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
@@ -305,14 +334,23 @@ def get_all_campaigns() -> List[Dict[str, Any]]:
     cursor.execute("SELECT * FROM campaigns ORDER BY created_at DESC")
     rows = cursor.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    campaigns_list = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["platforms"] = json.loads(d["platforms"])
+        except Exception:
+            d["platforms"] = []
+        campaigns_list.append(d)
+    return campaigns_list
 
 def create_campaign(data: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
-    camp_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
-    platforms = json.dumps(data.get("platforms", [])) if isinstance(data.get("platforms"), list) else str(data.get("platforms", "[]"))
+    camp_id = data.get("id") or str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    platforms_raw = data.get("platforms", [])
+    platforms_json = json.dumps(platforms_raw) if isinstance(platforms_raw, list) else str(platforms_raw)
     cursor.execute(
         "INSERT INTO campaigns (id, name, product, audience, budget, platforms, goal, tone, strategy, social_posts, email, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
@@ -321,23 +359,63 @@ def create_campaign(data: Dict[str, Any]) -> Dict[str, Any]:
             data.get("product", ""),
             data.get("audience", ""),
             float(data.get("budget", 5000.0)),
-            platforms,
+            platforms_json,
             data.get("goal", ""),
             data.get("tone", ""),
             data.get("strategy", ""),
             data.get("social_posts", ""),
             data.get("email", ""),
-            now,
+            data.get("created_at") or now,
         )
     )
     conn.commit()
     conn.close()
-    return {"id": camp_id, **data, "created_at": now}
+    return {**data, "id": camp_id, "created_at": data.get("created_at") or now}
 
 def delete_campaign(camp_id: str) -> bool:
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM campaigns WHERE id = ?", (camp_id,))
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return rows_affected > 0
+
+# ─── Scheduled Posts DB Helpers ──────────────────────────────────────────────
+
+def get_all_scheduled_posts() -> List[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM scheduled_posts ORDER BY created_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def create_scheduled_post(data: Dict[str, Any]) -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    post_id = data.get("id") or str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    cursor.execute(
+        "INSERT INTO scheduled_posts (id, title, content, platform, scheduled_time, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (
+            post_id,
+            data["title"],
+            data.get("content", ""),
+            data.get("platform", "Twitter/X"),
+            data.get("scheduled_time") or now,
+            data.get("status", "Scheduled"),
+            data.get("created_at") or now,
+        )
+    )
+    conn.commit()
+    conn.close()
+    return {**data, "id": post_id, "created_at": data.get("created_at") or now}
+
+def delete_scheduled_post(post_id: str) -> bool:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM scheduled_posts WHERE id = ?", (post_id,))
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
