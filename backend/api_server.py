@@ -12,7 +12,7 @@ import os
 import re
 import uuid
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -99,7 +99,7 @@ _jobs: Dict[str, Dict] = {}
 
 def _new_job(job_type: str, description: str, params: Dict) -> Dict:
     job_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     job = {
         "id": job_id, "type": job_type, "description": description,
         "params": params, "status": "queued", "progress": 0,
@@ -271,6 +271,29 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     status: Optional[str] = None
 
+class CampaignCreate(BaseModel):
+    id: Optional[str] = Field(default=None, max_length=100)
+    name: Optional[str] = Field(default=None, max_length=255)
+    product: str = Field(..., min_length=1, max_length=2000)
+    audience: Optional[str] = Field(default="", max_length=1000)
+    budget: Optional[float] = Field(default=5000.0, ge=0)
+    platforms: List[str] = Field(default=[])
+    goal: Optional[str] = Field(default="", max_length=255)
+    tone: Optional[str] = Field(default="", max_length=255)
+    strategy: Optional[str] = Field(default="")
+    social_posts: Optional[str] = Field(default="")
+    email: Optional[str] = Field(default="")
+    created_at: Optional[str] = Field(default=None, max_length=100)
+
+class ScheduledPostCreate(BaseModel):
+    id: Optional[str] = Field(default=None, max_length=100)
+    title: str = Field(..., min_length=1, max_length=255)
+    content: Optional[str] = Field(default="", max_length=2000)
+    platform: Optional[str] = Field(default="Twitter/X", max_length=100)
+    scheduled_time: Optional[str] = Field(default=None, max_length=100)
+    status: Optional[str] = Field(default="Scheduled", max_length=50)
+    created_at: Optional[str] = Field(default=None, max_length=100)
+
 # ─── Health ──────────────────────────────────────────────────────────────────
 
 @app.get("/")
@@ -291,7 +314,7 @@ async def health():
     replicate_token = os.getenv("REPLICATE_API_TOKEN", "")
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "ai_text": "groq_ready" if groq_key else "needs_groq_key",
         "ai_images": "pollinations_flux_free",
         "ai_video": "replicate_ready" if replicate_token.startswith("r8_") else "add_replicate_credit",
@@ -326,7 +349,7 @@ async def cancel_job(job_id: str):
 
 async def _run_image_generation(job_id: str, req: ImageRequest):
     try:
-        _update_job(job_id, status="running", started_at=datetime.utcnow().isoformat(),
+        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat(),
                     progress=20, logs=["Building prompt..."])
 
         prompt = req.prompt
@@ -355,15 +378,15 @@ async def _run_image_generation(job_id: str, req: ImageRequest):
 
         _update_job(job_id, status="completed", progress=100,
                     result={"images": images},
-                    completed_at=datetime.utcnow().isoformat(),
+                    completed_at=datetime.now(timezone.utc).isoformat(),
                     logs=["All images ready! ✅"])
     except Exception as e:
         logger.error(f"Image failed: {e}")
-        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.utcnow().isoformat())
+        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.now(timezone.utc).isoformat())
 
 @app.post("/api/images/generate")
 async def generate_image(request: ImageRequest, background_tasks: BackgroundTasks):
-    job = _new_job("image_generation", f"Image: {request.prompt[:60]}", request.dict())
+    job = _new_job("image_generation", f"Image: {request.prompt[:60]}", request.model_dump())
     background_tasks.add_task(_run_image_generation, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
 
@@ -371,7 +394,7 @@ async def generate_image(request: ImageRequest, background_tasks: BackgroundTask
 
 async def _run_campaign_generation(job_id: str, req: CampaignRequest):
     try:
-        _update_job(job_id, status="running", started_at=datetime.utcnow().isoformat(),
+        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat(),
                     progress=5, logs=["Starting campaign AI..."])
 
         sys_msg = "You are a world-class marketing strategist and copywriter. Be specific, creative, and action-oriented."
@@ -456,18 +479,18 @@ P.S. [Compelling postscript]""", system=sys_msg, max_tokens=900)
                             "budget": req.budget,
                             "platforms": req.platforms,
                             "goal": req.campaign_goal,
-                            "created_at": datetime.utcnow().isoformat(),
+                            "created_at": datetime.now(timezone.utc).isoformat(),
                         }
                     },
-                    completed_at=datetime.utcnow().isoformat(),
+                    completed_at=datetime.now(timezone.utc).isoformat(),
                     logs=["Campaign generated! ✅"])
     except Exception as e:
         logger.error(f"Campaign failed: {e}")
-        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.utcnow().isoformat())
+        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.now(timezone.utc).isoformat())
 
 @app.post("/api/campaigns/generate")
 async def generate_campaign(request: CampaignRequest, background_tasks: BackgroundTasks):
-    job = _new_job("campaign_generation", f"Campaign: {request.product_description[:60]}", request.dict())
+    job = _new_job("campaign_generation", f"Campaign: {request.product_description[:60]}", request.model_dump())
     background_tasks.add_task(_run_campaign_generation, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
 
@@ -475,7 +498,7 @@ async def generate_campaign(request: CampaignRequest, background_tasks: Backgrou
 
 async def _run_content_generation(job_id: str, req: ContentRequest):
     try:
-        _update_job(job_id, status="running", started_at=datetime.utcnow().isoformat(),
+        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat(),
                     progress=10, logs=["Writing content..."])
 
         type_prompts = {
@@ -509,14 +532,14 @@ Each: Headline (≤30 chars) | Long Headline (≤90 chars) | Description (≤90 
 
         _update_job(job_id, status="completed", progress=100,
                     result={"content": content, "type": req.content_type, "topic": req.topic},
-                    completed_at=datetime.utcnow().isoformat(), logs=["Content ready! ✅"])
+                    completed_at=datetime.now(timezone.utc).isoformat(), logs=["Content ready! ✅"])
     except Exception as e:
         logger.error(f"Content failed: {e}")
-        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.utcnow().isoformat())
+        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.now(timezone.utc).isoformat())
 
 @app.post("/api/content/generate")
 async def generate_content(request: ContentRequest, background_tasks: BackgroundTasks):
-    job = _new_job("content_generation", f"Content: {request.content_type} — {request.topic[:50]}", request.dict())
+    job = _new_job("content_generation", f"Content: {request.content_type} — {request.topic[:50]}", request.model_dump())
     background_tasks.add_task(_run_content_generation, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
 
@@ -542,7 +565,7 @@ When asked to write something, write it fully. Don't describe what you'd write �
 
 async def _run_video_generation(job_id: str, req: VideoRequest):
     try:
-        _update_job(job_id, status="running", started_at=datetime.utcnow().isoformat(),
+        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat(),
                     progress=10, logs=["Checking video provider..."])
         token = os.getenv("REPLICATE_API_TOKEN", "")
         if not token.startswith("r8_"):
@@ -559,14 +582,14 @@ async def _run_video_generation(job_id: str, req: VideoRequest):
         video_url = str(output[0]) if isinstance(output, list) else str(output)
         _update_job(job_id, status="completed", progress=100,
                     result={"video_url": video_url},
-                    completed_at=datetime.utcnow().isoformat(), logs=["Video ready! ✅"])
+                    completed_at=datetime.now(timezone.utc).isoformat(), logs=["Video ready! ✅"])
     except Exception as e:
         logger.error(f"Video failed: {e}")
-        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.utcnow().isoformat())
+        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.now(timezone.utc).isoformat())
 
 @app.post("/api/videos/generate")
 async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
-    job = _new_job("video_generation", f"Video: {request.prompt[:60]}", request.dict())
+    job = _new_job("video_generation", f"Video: {request.prompt[:60]}", request.model_dump())
     background_tasks.add_task(_run_video_generation, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
 
@@ -574,7 +597,7 @@ async def generate_video(request: VideoRequest, background_tasks: BackgroundTask
 
 async def _run_contact_finder(job_id: str, req: ContactRequest):
     try:
-        _update_job(job_id, status="running", started_at=datetime.utcnow().isoformat(),
+        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat(),
                     progress=10, logs=["Finding contacts..."])
 
         prompt = f"""Generate {req.num_contacts} realistic business contacts for product outreach.
@@ -614,15 +637,15 @@ Generate {req.num_contacts} contacts now. Return ONLY the JSON array:"""
 
         _update_job(job_id, status="completed", progress=100,
                     result={"contacts": contacts, "raw": raw, "count": len(contacts)},
-                    completed_at=datetime.utcnow().isoformat(),
+                    completed_at=datetime.now(timezone.utc).isoformat(),
                     logs=[f"Found {len(contacts)} contacts! ✅"])
     except Exception as e:
         logger.error(f"Contacts failed: {e}")
-        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.utcnow().isoformat())
+        _update_job(job_id, status="failed", error=str(e), completed_at=datetime.now(timezone.utc).isoformat())
 
 @app.post("/api/contacts/find")
 async def find_contacts(request: ContactRequest, background_tasks: BackgroundTasks):
-    job = _new_job("contact_finder", f"Find contacts: {request.product_description[:50]}", request.dict())
+    job = _new_job("contact_finder", f"Find contacts: {request.product_description[:50]}", request.model_dump())
     background_tasks.add_task(_run_contact_finder, job["id"], request)
     return {"job_id": job["id"], "status": "queued"}
 
@@ -635,12 +658,12 @@ async def list_customers():
 
 @app.post("/api/customers")
 async def create_customer(customer: CustomerCreate):
-    res = db.create_customer(customer.dict())
+    res = db.create_customer(customer.model_dump())
     return {"customer": res, "message": "Customer created successfully"}
 
 @app.put("/api/customers/{customer_id}")
 async def update_customer(customer_id: str, customer: CustomerUpdate):
-    res = db.update_customer(customer_id, customer.dict(exclude_unset=True))
+    res = db.update_customer(customer_id, customer.model_dump(exclude_unset=True))
     if not res:
         raise HTTPException(status_code=404, detail="Customer not found")
     return {"customer": res, "message": "Customer updated"}
@@ -659,17 +682,17 @@ async def list_db_contacts():
 
 @app.post("/api/contacts/db")
 async def create_db_contact(contact: ContactCreate):
-    res = db.create_contact(contact.dict())
+    res = db.create_contact(contact.model_dump())
     return {"contact": res, "message": "Contact saved"}
 
 @app.post("/api/contacts/db/bulk")
 async def bulk_create_db_contacts(contacts: List[ContactCreate]):
-    saved = [db.create_contact(c.dict()) for c in contacts]
+    saved = [db.create_contact(c.model_dump()) for c in contacts]
     return {"contacts": saved, "count": len(saved), "message": "Contacts saved"}
 
 @app.put("/api/contacts/db/{contact_id}")
 async def update_db_contact(contact_id: str, contact: ContactUpdate):
-    res = db.update_contact(contact_id, contact.dict(exclude_unset=True))
+    res = db.update_contact(contact_id, contact.model_dump(exclude_unset=True))
     if not res:
         raise HTTPException(status_code=404, detail="Contact not found")
     return {"contact": res, "message": "Contact updated"}
@@ -688,12 +711,12 @@ async def list_db_products():
 
 @app.post("/api/products/db")
 async def create_db_product(product: ProductCreate):
-    res = db.create_product(product.dict())
+    res = db.create_product(product.model_dump())
     return {"product": res, "message": "Product saved"}
 
 @app.put("/api/products/db/{product_id}")
 async def update_db_product(product_id: str, product: ProductUpdate):
-    res = db.update_product(product_id, product.dict(exclude_unset=True))
+    res = db.update_product(product_id, product.model_dump(exclude_unset=True))
     if not res:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"product": res, "message": "Product updated"}
@@ -704,6 +727,40 @@ async def delete_db_product(product_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
+
+# Campaigns DB CRUD
+@app.get("/api/campaigns/db")
+async def list_db_campaigns():
+    return {"campaigns": db.get_all_campaigns()}
+
+@app.post("/api/campaigns/db")
+async def create_db_campaign(campaign: CampaignCreate):
+    res = db.create_campaign(campaign.model_dump())
+    return {"campaign": res, "message": "Campaign saved to database"}
+
+@app.delete("/api/campaigns/db/{campaign_id}")
+async def delete_db_campaign(campaign_id: str):
+    success = db.delete_campaign(campaign_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return {"message": "Campaign deleted"}
+
+# Scheduled Posts DB CRUD
+@app.get("/api/schedule")
+async def list_db_scheduled_posts():
+    return {"scheduled_posts": db.get_all_scheduled_posts()}
+
+@app.post("/api/schedule")
+async def create_db_scheduled_post(post: ScheduledPostCreate):
+    res = db.create_scheduled_post(post.model_dump())
+    return {"post": res, "message": "Post scheduled successfully"}
+
+@app.delete("/api/schedule/{post_id}")
+async def delete_db_scheduled_post(post_id: str):
+    success = db.delete_scheduled_post(post_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Scheduled post not found")
+    return {"message": "Post deleted successfully"}
 
 # ─── Analytics ────────────────────────────────────────────────────────────────
 

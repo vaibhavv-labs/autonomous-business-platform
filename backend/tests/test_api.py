@@ -1,6 +1,6 @@
 """
 FastAPI Backend Unit Test Suite — Phase 6
-5 Comprehensive Tests for API Health, CRUD Lifecycles, and Pydantic Validation
+Extended with Comprehensive Tests for API Health, CRUD Lifecycles, and Pydantic Validation
 """
 
 import sys
@@ -113,7 +113,66 @@ def test_products_crud_lifecycle():
     assert delete_res.status_code == 200
     assert delete_res.json()["message"] == "Product deleted"
 
-# 5. Pydantic Validation Error Rejection Test
+# 5. Campaigns CRUD Lifecycle Test
+def test_campaigns_crud_lifecycle():
+    # Create Campaign
+    payload = {
+        "name": "Winter Clearance Promo",
+        "product": "Waterproof Snow Boots",
+        "audience": "Skiers and snowboarders",
+        "budget": 2500.0,
+        "platforms": ["Instagram", "Facebook"],
+        "goal": "Sales Conversion",
+        "tone": "Bold",
+        "strategy": "Launch discounts and targeted ad graphics",
+        "social_posts": "Grab your boots at 20% off!",
+        "email": "Winter Clearance is here!"
+    }
+    create_res = client.post("/api/campaigns/db", json=payload)
+    assert create_res.status_code == 200
+    campaign = create_res.json()["campaign"]
+    camp_id = campaign["id"]
+    assert campaign["name"] == "Winter Clearance Promo"
+
+    # Read Campaigns
+    list_res = client.get("/api/campaigns/db")
+    assert list_res.status_code == 200
+    campaigns = list_res.json()["campaigns"]
+    assert any(c["id"] == camp_id for c in campaigns)
+
+    # Delete Campaign
+    delete_res = client.delete(f"/api/campaigns/db/{camp_id}")
+    assert delete_res.status_code == 200
+    assert delete_res.json()["message"] == "Campaign deleted"
+
+# 6. Scheduled Posts CRUD Lifecycle Test
+def test_scheduled_posts_crud_lifecycle():
+    # Create Scheduled Post
+    payload = {
+        "title": "Weekly Tech Tips",
+        "content": "Make sure to backup your databases hourly! #DevOps #Tech",
+        "platform": "Twitter/X",
+        "scheduled_time": "2025-12-25T12:00:00Z",
+        "status": "Scheduled"
+    }
+    create_res = client.post("/api/schedule", json=payload)
+    assert create_res.status_code == 200
+    post = create_res.json()["post"]
+    post_id = post["id"]
+    assert post["title"] == "Weekly Tech Tips"
+
+    # Read Scheduled Posts
+    list_res = client.get("/api/schedule")
+    assert list_res.status_code == 200
+    posts = list_res.json()["scheduled_posts"]
+    assert any(p["id"] == post_id for p in posts)
+
+    # Delete Scheduled Post
+    delete_res = client.delete(f"/api/schedule/{post_id}")
+    assert delete_res.status_code == 200
+    assert delete_res.json()["message"] == "Post deleted successfully"
+
+# 7. Pydantic Validation Error Rejection Test
 def test_pydantic_validation_rejection():
     # Missing required 'product_description'
     invalid_payload = {
